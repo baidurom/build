@@ -23,7 +23,7 @@ fi
 if [ -n "$PORT_ROOT" ]; then
     MATCH=$(echo $PATH | grep $PORT_ROOT)
     if [ "$MATCH" = "" ];then
-		PATH=$PATH:$PORT_ROOT/tools
+		PATH=$PORT_ROOT/tools:$PATH
 		LD_LIBRARY_PATH=$PORT_ROOT/tools/lib/:$LD_LIBRARY_PATH
 	export PATH LD_LIBRARY_PATH
     fi

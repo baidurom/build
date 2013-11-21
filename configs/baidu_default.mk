@@ -40,7 +40,9 @@ BAIDU_PREBUILT += \
 	lib/libacs.so \
 	lib/libBaiduJni.so \
 	lib/libBaiduJniAnti.so \
-	lib/libSMSFilter.so
+	lib/libSMSFilter.so \
+	lib/libjni_eglfenceForGallery.so \
+	lib/libjni_filtershow_filtersForGallery.so
 
 # for BaiduSysFramework 
 BAIDU_PREBUILT += \
@@ -64,7 +66,13 @@ BAIDU_PREBUILT += \
 	etc/localTheme01.btp \
 	etc/localTheme02.btp \
 	etc/security/otacerts.zip \
-	media/audio/alarms/alarm.mp3 \
+	media/audio/alarms/HarvestSeasonAlarm.ogg \
+	media/audio/alarms/KusoAlarm.ogg \
+	media/audio/alarms/RingingAlarm.ogg \
+	media/audio/alarms/TinkingAlarm.ogg \
+	media/audio/ui/Effect_Tick.ogg \
+	media/audio/ui/Unlock.ogg \
+	media/audio/ui/camera_focus.ogg \
 	bin/http2wormhole \
 	bin/property_stop.sh \
 	bin/property_start.sh \
@@ -187,14 +195,18 @@ BAIDU_PREBUILT += \
 	app/OnlineWallpaper.apk \
 	app/BaiduFlashlight.apk \
 	app/BaiduVirusKilling.apk \
-	app/BaiduFestival.apk
+	app/BaiduFestival.apk \
+	app/FusedLocation.apk \
+	app/BaiduGallery3D.apk \
+	app/Email2.apk \
+	app/Exchange2.apk \
 
 BAIDU_PREBUILT += \
-	app/Yellowpages.apk \
+    app/Yellowpages.apk \
 	etc/onlinephonebook.db
 
 BAIDU_PREBUILT += \
-	lib/libyi_compress_module.so
+    lib/libyi_compress_module.so
 
 BAIDU_PRESIGNED_APPS += \
 	app/BaiduBrowser.apk \
@@ -229,9 +241,9 @@ BAIDU_PROPERTY_OVERRIDES := \
 	ro.baidu.build.software=yi_3.0 \
 	ro.baidu.build.version.release=2.1 \
 	ro.product.manufacturer=Baidu \
-	ro.config.notification_sound=Ding.mp3 \
-	ro.config.ringtone=Echo.mp3 \
-	ro.config.alarm_alert=alarm.mp3 \
+	ro.config.notification_sound=HarvestSeason_meassage.ogg \
+	ro.config.ringtone=HarvestSeason.ogg \
+	ro.config.alarm_alert=KusoAlarm.ogg \
 	ro.config.rootperm.enable=1 \
 	persist.sys.timezone=Asia/Shanghai \
 	ro.rom.mt.font=0

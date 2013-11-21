@@ -107,6 +107,7 @@ $(OUT_OBJ_APP)/$($(2)_apkBaseName).signed.apk: $(OUT_OBJ_RES)/$($(2)_apkBaseName
 				zip -d $$</$$(apkName) "META-INF/*" 2>&1 > /dev/null; \
 				java -jar $(SIGN_JAR) $(TESTKEY_PEM) $(TESTKEY_PK) $$</$$(apkName) $$@; \
 				rm $$</$($(2)_apkBaseName).apk; \
+				touch $$@; \
 			else \
 				echo ">>> presigned $(1) to $$@"; \
 				cp '$(1)' $$@; \
@@ -152,8 +153,8 @@ $(2): $(1) $(VENDOR_METAINF)
 	$(hide) cd $$(tempJarDir) && jar xf $$(jarBaseName);
 	$(hide) mv $$(tempJarDir)/classes.dex $$(tempJarDir)/Jar; 
 	$(hide) if [ $$(jarBaseName) != "framework.jar" ];then \
-			rm -rf $$(tempJarDir)/Jar/preloaded-classes; \
-		fi; 
+				rm -rf $$(tempJarDir)/Jar/preloaded-classes; \
+			fi; 
 	$(hide) cd $$(tempJarDir) && jar cf $$(jarBaseName) -C Jar/ . ; 
 	$(hide) mv $$(tempJarDir)/$$(jarBaseName) $(2);
 	$(hide) rm -rf $$(tempJarDir);
@@ -193,8 +194,8 @@ ifneq ($(strip $(baidu_prebuilt_package)),)
 			$(call safe_dir_copy,$(3)/smali/$(package),$(4)/smali/$(package)))
 endif
 	$(hide) if [ -f $(PRJ_CUSTOM_JAR) ];then \
-			$(PRJ_CUSTOM_JAR) $(1) $(4); \
-		fi
+				$(PRJ_CUSTOM_JAR) $(1) $(4); \
+			fi
 endef
 
 # custom jar: call custom_app.sh in $(PRJ_ROOT)
@@ -305,8 +306,8 @@ $(OUT_OBJ_SYSTEM)/$(2): $(MERGED_PUBLIC_XML) $(IF_ALL_RES) $$($(call getBaseName
 	$(hide) $(call name_to_id,$$(tempSmaliDir));
 	$(hide) $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_MERGED_TAG));
 	$(hide) if [ ! -d `dirname $(OUT_OBJ_SYSTEM)/$(2)` ]; then \
-			mkdir -p `dirname $(OUT_OBJ_SYSTEM)/$(2)`; \
-		fi;
+				mkdir -p `dirname $(OUT_OBJ_SYSTEM)/$(2)`; \
+			fi;
 	$(hide) $(APKTOOL) b $$(tempSmaliDir) $(OUT_OBJ_SYSTEM)/$(2);
 	$(hide) rm -rf $$(tempSmaliDir);
 	$(hide) echo ">>> build apk $(1) done";
@@ -424,7 +425,7 @@ $(OUT_OBJ_SYSTEM)/$(1): $(BAIDU_SYSTEM)/$(1) $(MERGE_UPDATE_TXT) $(IF_ALL_RES)
 	$(hide) $(call modify_res_id,$$(tempSmaliDir))
 	$(hide) $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_MERGED_TAG))
 	$(hide) mkdir -p `dirname $$@`
-	$(hide) $(APKTOOL) b $$(tempSmaliDir) $$@ 2>/dev/null;
+	$(hide) $(APKTOOL) b $$(tempSmaliDir) $$@
 	$(hide) rm -rf $$(tempSmaliDir);
 	$(hide) echo ">>> Update out ==> $$@"
 endef
@@ -471,7 +472,9 @@ endef
 
 # dexopt a jar
 define dex_opt_jar
-if [ -f $(OUT_ODEX_FRAMEWORK)/$(1).jar ] && [ ! -f $(OUT_ODEX_FRAMEWORK)/$(1).odex ];then \
+if [ -f $(OUT_ODEX_FRAMEWORK)/$(1).jar ] \
+	&& [ ! -f $(OUT_ODEX_FRAMEWORK)/$(1).odex ] \
+	&& [ "x`unzip -l "$(OUT_ODEX_FRAMEWORK)/$(1).jar" | grep -o "classes.dex"`" = "xclasses.dex" ]; then \
 	echo ">>> begin odex for $(1)"; \
 	$(call dexopt_one_file,$(OUT_ODEX_FRAMEWORK)/$(1).jar,$(OUT_ODEX_FRAMEWORK)/$(1).odex) || exit $?; \
 	$(call delete_classes_dex,$(OUT_ODEX_FRAMEWORK)/$(1).jar) || exit $?; \
@@ -480,7 +483,8 @@ endef
 
 # dexopt a apk
 define dex_opt_app
-if [ "x`grep "\\"$(1)\.apk\\"" $(OUT_ODEX_META)/apkcerts.txt | grep "\"PRESIGNED\""`" = "x" ]; then \
+if [ "x`grep "\\"$(1)\.apk\\"" $(OUT_ODEX_META)/apkcerts.txt | grep "\"PRESIGNED\""`" = "x" ] \
+	&& [ "x`unzip -l "$(OUT_ODEX_APP)/$(1).apk" | grep -o "classes.dex"`" = "xclasses.dex" ]; then \
 	echo ">>> begin odex for $(1)"; \
 	$(call dexopt_one_file,$(OUT_ODEX_APP)/$(1).apk,$(OUT_ODEX_APP)/$(1).odex) || exit $?; \
 	$(call delete_classes_dex,$(OUT_ODEX_APP)/$(1).apk) || exit $?; \

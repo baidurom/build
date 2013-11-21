@@ -250,6 +250,8 @@ $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: $(FRAMEWORK_RES_SOURCE)
 		
 
 $(OUT_OBJ_FRAMEWORK)/framework-res.apk: tmpResDir := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/framework-res.XXX)
+
+ifneq ($(strip $(NOT_CUSTOM_FRAMEWORK-RES)),true)
 $(OUT_OBJ_FRAMEWORK)/framework-res.apk: $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp
 	$(hide) mkdir -p $(tmpResDir)
 	$(hide) $(APKTOOL) d -f $< $(tmpResDir)
@@ -257,6 +259,10 @@ $(OUT_OBJ_FRAMEWORK)/framework-res.apk: $(OUT_OBJ_FRAMEWORK)/framework-res.apk.t
 	$(hide) $(APKTOOL) b $(tmpResDir) $@
 	$(hide) rm -rf $(tmpResDir)
 	$(hide) echo ">>> build framework-res.apk done"
+else
+$(OUT_OBJ_FRAMEWORK)/framework-res.apk: $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp
+	$(hide) cp $< $@
+endif
 
 # define the rule to make framework-res
 framework-res: $(OUT_SYSTEM_FRAMEWORK)/framework-res.apk generate-merged-txts
@@ -390,8 +396,9 @@ $(OUT_OBJ_META)/apkcerts.txt: $(BAIDU_META)/apkcerts.txt $(VENDOR_META)/apkcerts
 	$(hide) echo "    except: $(VENDOR_SIGN_APPS), CERTS_PATH:$(CERTS_PATH)";
 	$(hide) mkdir -p $(OUT_OBJ_META)
 	$(hide) cp $(BAIDU_META)/apkcerts.txt $(OUT_OBJ_DIR)/apkcerts.txt;
-	$(hide) sed 's#build/target/product/security#$(CERTS_PATH)#g' $(BAIDU_META)/apkcerts.txt \
-				| grep -v "cts-testkey" > $(OUT_OBJ_DIR)/apkcerts.txt;
+	$(hide) egrep 'certificate="build/target/product/security|PRESIGNED' $(BAIDU_META)/apkcerts.txt \
+				| sed 's#build/target/product/security#$(CERTS_PATH)#g'  \
+				> $(OUT_OBJ_DIR)/apkcerts.txt;
 	$(hide) echo ">>> USE_VENDOR_CERT_APPS:$(USE_VENDOR_CERT_APPS)"
 	$(hide) for apk in $(USE_VENDOR_CERT_APPS); do\
 				apkbasename=`basename $$apk`; \
@@ -473,9 +480,16 @@ $(PRJ_OUT_TARGET_ZIP): target-files
 	$(hide) cd $(OUT_TARGET_DIR) && zip -q -r -y target-files.zip *;
 	$(hide) mv $(OUT_TARGET_DIR)/target-files.zip $@;
 
+ifeq ($(USE_FIVE_PARAM_FORMAT),true)
+FORMAT_PARAM := -f 5
+else
+FORMAT_PARAM :=
+endif
+
 $(OUT_DIR)/ota_$(PRJ_NAME).zip: device_specific_script := $(call get_device_specific_script)
 $(OUT_DIR)/ota_$(PRJ_NAME).zip: $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
 	$(hide) $(OTA_FROM_TARGET_FILES) $(device_specific_script) \
+			$(FORMAT_PARAM) \
 			-n -k $(OTA_CERT) \
 			$(LOGO_BIN_PARAM) \
 			$(OUT_TARGET_ZIP) \
@@ -512,9 +526,5 @@ clean: $(CLEAN_TARGETS)
 
 .PHONY: clean-all
 clean-all: clean clean-baidu-zip
-
-#################### bring up #############################
-include $(PORT_BUILD)/bringup.mk
-
 
 $(info # ------------------------------------------------------------------)
