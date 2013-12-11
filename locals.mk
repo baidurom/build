@@ -6,12 +6,6 @@
 # set PRJ_ROOT to PWD
 PRJ_ROOT := $(PWD)
 
-# if doesn't set PLATFORM, set it to qualcomm default
-# only for unpack, pack boot recovery
-ifeq ($(strip $(PLATFORM)),)
-    PLATFORM := qualcomm
-endif
-
 # if doesn't set PRJ_NAME, set by PRJ_ROOT
 ifeq ($(strip $(PRJ_NAME)),)
     PRJ_NAME := $(shell basename $(PRJ_ROOT))
@@ -46,7 +40,8 @@ endif
 ALL_DENSITY := \
      mdpi \
      hdpi \
-     xhdpi
+     xhdpi \
+     xxhdpi
 
 ifeq ($(strip $(DENSITY)),)
     DENSITY := hdpi
@@ -107,6 +102,7 @@ OUT_OBJ_SYSTEM    := $(OUT_OBJ_DIR)/system
 OUT_OBJ_FRAMEWORK := $(OUT_OBJ_SYSTEM)/framework
 OUT_OBJ_APP       := $(OUT_OBJ_SYSTEM)/app
 OUT_OBJ_RES       := $(OUT_OBJ_SYSTEM)/res
+OUT_OBJ_BIN       := $(OUT_OBJ_SYSTEM)/bin
 
 BAIDU_PUBLIC_XML  := $(OUT_OBJ_RES)/public_master.xml
 VENDOR_PUBLIC_XML := $(OUT_OBJ_RES)/public_vendor.xml
@@ -127,6 +123,7 @@ OUT_DATA             := $(OUT_TARGET_DIR)/DATA
 OUT_SYSTEM_APP       := $(OUT_SYSTEM)/app
 OUT_SYSTEM_FRAMEWORK := $(OUT_SYSTEM)/framework
 OUT_SYSTEM_LIB       := $(OUT_SYSTEM)/lib
+OUT_SYSTEM_BIN       := $(OUT_SYSTEM)/bin
 OUT_BUILD_PROP       := $(OUT_SYSTEM)/build.prop
 
 ################# target-files zips #######################

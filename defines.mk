@@ -446,14 +446,6 @@ $(1): $(2) $(IF_VENDOR_RES)
 	$(hide) rm "$$(tempDir)" -rf;
 endef
 
-# if PLATFORM isn't mtk, 
-# need use $(NON_MTK_WRITE_RAW_IMAGE) to generate updater-script
-define get_device_specific_script
-$(shell if [ `echo $(PLATFORM) | tr A-Z a-z` != "mtk" ]; then \
-		echo "-s $(NON_MTK_WRITE_RAW_IMAGE)";\
-	fi;)
-endef
-
 # dexopt one file
 define dexopt_one_file
 export LD_LIBRARY_PATH; \

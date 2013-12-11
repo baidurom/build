@@ -7,18 +7,25 @@ TARGET_FILES_FROM_DEVICE:= $(PORT_TOOLS)/target_files_from_device.sh
 
 ############# newproject, oemotarom #####################
 ./PHONY: newproject oemotarom
+ifeq ($(PRJ_BOOT_IMG), $(wildcard $(PRJ_BOOT_IMG)))
 newproject: prepare-vendor prepare-vendor-boot prepare-vendor-recovery prepare-metainf decodefile
-#	$(hide) rm -rf $(OUT_DIR)
-#   $(hide) rm $(PRJ_OTHER_DIR)/boot.img $(PRJ_OTHER_DIR)/recovery.img $(PRJ_OTHER_DIR)/recovery.fstab
+	$(hide) if [ -f $(OUT_DIR)/build-info-to-user.txt ];then \
+				cat $(OUT_DIR)/build-info-to-user.txt; \
+			fi
 	$(hide) echo ">>> newproject done"
+else
+newproject: prepare-vendor prepare-vendor-recovery prepare-metainf decodefile
+	$(hide) if [ -f $(OUT_DIR)/build-info-to-user.txt ];then \
+				cat $(OUT_DIR)/build-info-to-user.txt; \
+			fi
+	$(hide) echo ">>> newproject without preparing vendor/BOOT directory"
+	$(hide) echo ">>> newproject done"
+endif
 
 oemotarom: $(OEM_OTA_ZIP)
 	$(hide) echo ">>> oemotarom done"
 
-OEM_PREPARE_FILE := $(PRJ_BOOT_IMG)
-OEM_PREPARE_FILE += $(PRJ_RECOVERY_FSTAB)
-
-$(OEM_TARGET_ZIP): $(OEM_PREPARE_FILE)
+$(OEM_TARGET_ZIP): $(PRJ_RECOVERY_FSTAB)
 	$(hide) $(TARGET_FILES_FROM_DEVICE) target
 
 $(OEM_OTA_ZIP): $(OEM_TARGET_ZIP)
@@ -54,7 +61,7 @@ prepare-vendor-boot : unpack-boot prepare-vendor
 	$(hide) echo ">>> prepare-vendor-boot done"
 
 ./PHONY: prepare-vendor-recovery
-prepare-vendor-recovery: prepare-vendor prepare-vendor-boot
+prepare-vendor-recovery: prepare-vendor
 	$(hide) if [ -f $(VENDOR_SYSTEM)/build.prop ];then \
 				echo ">>> auto catch the recovery prop"; \
 				mkdir -p $(VENDOR_RECOVERY_RAMDISK); \

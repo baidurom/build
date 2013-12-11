@@ -59,12 +59,7 @@ check-project:
 				echo ">>> $(PRJ_ROOT)/makefile doesn't exist!!"; \
 				exit 1; \
 			fi
-	$(hide) if [ "$(PLATFORM)" = "" ];then \
-				echo ">>> ERROR: invalid platform, PLATFORM can not be null, "; \
-				exit 1; \
-			fi
 	$(hide) echo ">>> project path: $(PRJ_ROOT)"
-	$(hide) echo ">>> platform: $(PLATFORM)"
 	$(hide) echo ">>> project: $(PRJ_NAME)"
 	$(hide) echo ">>> check-project done, SUCCESS\n"
 
@@ -356,11 +351,23 @@ $(OUT_OBJ_META)/filesystem_config.txt: $(VENDOR_META)/filesystem_config.txt
 	$(hide) mkdir -p $(OUT_OBJ_META)
 	$(hide) cp $(VENDOR_META)/filesystem_config.txt $(OUT_OBJ_META)/filesystem_config.txt;
 
+$(OUT_OBJ_META)/misc_info.txt: $(VENDOR_META)/misc_info.txt
+	$(hide) cp $< $@
+
+$(OUT_META)/misc_info.txt: $(OUT_OBJ_META)/misc_info.txt
+	$(hide) extensions_path=$$(cat $< | grep "tool_extensions=.\+" | grep -v "tool_extensions="); \
+			if [ -d "$(PRJ_ROOT)/$$extensions_path" -o -f "$(PRJ_ROOT)/$$extensions_path" ];then \
+				echo ">>> absolute path of tool_extensions: $(PRJ_ROOT)/$$extensions_path"; \
+				sed -i '/tool_extensions/d' $<; \
+				echo "tool_extensions=$(PRJ_ROOT)/$$extensions_path" >> $<; \
+			fi
+	$(hide) cp $< $@
+
 .PHONY: META
 TARGET_FILES_META := META
-META: $(eval meta_sources := $(filter-out %/filesystem_config.txt %/apkcerts.txt %/linkinfo.txt,\
+META: $(eval meta_sources := $(filter-out %/filesystem_config.txt %/apkcerts.txt %/linkinfo.txt %/misc_info.txt, \
         $(call get_all_files_in_dir,$(VENDOR_META))))
-META: $(OUT_META)/filesystem_config.txt $(OUT_META)/apkcerts.txt
+META: $(OUT_META)/filesystem_config.txt $(OUT_META)/apkcerts.txt $(OUT_META)/misc_info.txt
 	$(hide) cp $(meta_sources) $(OUT_META);
 	$(hide) echo ">>> META is ok."
 
@@ -465,6 +472,28 @@ $(OUT_LOGO_BIN): $(PRJ_LOGO_BIN)
 	$(hide) cp $(PRJ_LOGO_BIN) $(OUT_LOGO_BIN)
 endif
 
+##################### baidu_service #########################
+ifneq ($(strip $(USER)),baidu)
+TARGET_FILES_SYSTEM += $(OUT_SYSTEM_BIN)/baidu_service
+else ifeq ($(strip $(filter boot boot.img, $(vendor_modify_images))),)
+TARGET_FILES_SYSTEM += $(OUT_SYSTEM_BIN)/baidu_service
+endif
+
+$(OUT_SYSTEM_BIN)/baidu_service: obj_baidu_service := $(OUT_OBJ_BIN)/baidu_service
+$(OUT_SYSTEM_BIN)/baidu_service: 
+	@ echo ">>> target $@"
+	$(hide) rm -f $@
+	$(hide) mkdir -p $(OUT_SYSTEM_BIN)
+	$(hide) mkdir -p `dirname $(obj_baidu_service)`
+	$(hide) if [ -f $(SOURCE_BOOT_RAMDISK_SERVICEEXT) ]; then \
+				cp $(SOURCE_BOOT_RAMDISK_SERVICEEXT) $(OUT_SYSTEM_BIN); \
+			fi;
+	$(hide) echo "#!/system/bin/sh\n" > $(obj_baidu_service)
+	$(hide) echo "# used to start baidu's daemon, invoid to modify boot.img! " >> $(obj_baidu_service)
+	$(hide) $(foreach service,$(BAIDU_SERVICES),\
+				echo "$(service) &" >> $(obj_baidu_service);)
+	$(hide) cp $(obj_baidu_service) $@
+
 ################### target-files #######################
 TARGET_FILES_SYSTEM += bootimage recoveryimage
 OTA_TARGETS += target-files-system
@@ -486,9 +515,8 @@ else
 FORMAT_PARAM :=
 endif
 
-$(OUT_DIR)/ota_$(PRJ_NAME).zip: device_specific_script := $(call get_device_specific_script)
 $(OUT_DIR)/ota_$(PRJ_NAME).zip: $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
-	$(hide) $(OTA_FROM_TARGET_FILES) $(device_specific_script) \
+	$(hide) $(OTA_FROM_TARGET_FILES) \
 			$(FORMAT_PARAM) \
 			-n -k $(OTA_CERT) \
 			$(LOGO_BIN_PARAM) \

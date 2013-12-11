@@ -137,9 +137,17 @@ function c$projectName()
     rm -rf "$temp_info"
 }
 
-setupCdFunction
+function pack_bootimg()
+{
+	$PORT_ROOT/tools/bootimgpack/pack_bootimg.py $@
+}
 
-source $PORT_ROOT/build/boot_recovery/fundefine.sh
+function unpack_bootimg()
+{
+	$PORT_ROOT/tools/bootimgpack/unpack_bootimg.py $@
+}
+
+setupCdFunction
 
 if [ -f $PORT_BUILD/Makefile ]; then
     cp $PORT_BUILD/Makefile $PORT_ROOT
@@ -217,4 +225,13 @@ function imgtoota()
     fi
 }
 
+function makeconfig()
+{
+	makeConfigCmd=$PORT_BUILD/tools/makeconfig
+	if [ -x $makeConfigCmd  ]; then
+		$makeConfigCmd $@
+	else
+		echo "$makeConfigCmd doesn't exist or can not execute!"
+	fi
+}
 

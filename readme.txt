@@ -16,40 +16,14 @@ DALVIK_VM_BUILD := 27
 DENSITY := hdpi/mdpi/xhdpi
 
 ##############################################################################
-# This value will control the method of pack or unpack image and so on
-# you can use mtk/qualcomm/sony
-#-----------------------------------------------------------------------------
-PLATFORM := qualcomm/mtk/sony
-
-##############################################################################
-# This value will control the method of unpack image when prepare BOOT when use a ota base zip
-# you can use mtk/qualcomm/sony
-#-----------------------------------------------------------------------------
-BASE_PLATFORM := qualcomm/mtk/sony
-
-##############################################################################
-# you can custom boot image and recovery image name
-#-----------------------------------------------------------------------------
-# BOOT_IMG := bootname
-# RECOVERY_IMG := recoveryname
-
-##############################################################################
-# use for newproject, not unpack boot.img to BOOT, or not unpack recovery.img to RECOVERY
-# Support Values:
-# false, not unpack
-#-----------------------------------------------------------------------------
-# PRJ_UNPACK_BOOT_IMG := false
-# PRJ_UNPACK_RECOVERY_IMG := false
-
-##############################################################################
 # customize weather use prebuilt image or pack from BOOT/RECOVERY directory
 # Support Values:
-# true, use prebuilt boot.img/recovery.img
-# flase, pack boot.img/recovery.img from vendor/BOOT / vendor/RECOVERY
-# NULL, none boot.img/recovery.img
+# vendor_modify_images := boot recovery
+# boot/recovery, pack boot.img/recovery.img from vendor/BOOT / vendor/RECOVERY
+# NULL, check boot.img/recovery.img in project root directory, if it exists,
+# use a prebuilt boot.img/recovery.img, if not, nothing to do
 #-----------------------------------------------------------------------------
-PREBUILT_BOOT_IMG := false
-# PREBUILT_RECOVERY_IMG := flase
+# vendor_modify_images := boot recovery
 
 ##############################################################################
 # Directorys which you want to remove in vendor directory

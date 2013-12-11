@@ -19,7 +19,7 @@ BAIDU_PREBUILT += \
 	lib/libwordseg.so \
 	lib/libvoiceSpeechVad.so \
 	lib/libSpeakerRec.so \
-	lib/libffmpeg.so \
+	lib/libcyberplayer-core.so \
 	lib/libcyberplayer.so \
 	lib/liblocSDK_2.4.so \
 	lib/liblocSDK3.so \
@@ -229,7 +229,6 @@ BAIDU_UPDATE_RES_APPS += \
 	app/Phone.apk \
 	app/Mms.apk \
 	app/P2P.apk \
-	app/BaiduGallery3D.apk \
 	app/BaiduDualCardSetting.apk \
 	app/Calendar.apk \
 	app/SceneMode.apk \
@@ -252,7 +251,12 @@ BAIDU_PROPERTY_FOLLOW_BASE := \
 	ro.baidu.build.hardware.version \
 	ro.baidu.build.software \
 	ro.baidu.build.version.release \
-	ro.build.version.release
+	ro.build.version.release \
+	ro.baidu.recovery.verify
+
+BAIDU_SERVICES += \
+	/system/bin/WordSegService \
+	/system/bin/serviceext
 
 BAIDU_PREBUILT_PACKAGE_android.policy := \
 	android \

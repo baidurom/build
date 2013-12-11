@@ -1,0 +1,283 @@
+#!/bin/bash
+
+##########################################
+#
+# author: baidu
+# usage: used to generate Makefile for an coron project
+# date: 2013/11/21
+#
+##########################################
+
+ADB="adb"
+NEW_MAKEFILE=$PWD/Makefile
+DENSITY_CFG=$PORT_ROOT/reference/configs/makeconfig/density.cfg
+TEMPLATE_MAKEFILE=$PORT_ROOT/reference/configs/makeconfig/Makefile.template
+VENDOR_MODIFY_JARS_SUGGEST="framework|HTCExtension|services|telephony-common"
+VENDOR_SAVED_APPS_SUGGEST="MtkBt|FMTransmitter|FMRadio|Bluetooth|FmRadio"
+
+DENSITY=""
+vendor_modify_jars=""
+vendor_saved_apps=""
+
+############### print log #################
+
+function LOGD()
+{
+	echo "D/$TAG: $*"
+}
+
+function LOGE()
+{
+	echo "E/$TAG: $*"
+}
+
+function LOGW()
+{
+	echo "W/$TAG: $*"
+}
+
+################## adb ######################
+function isSuOk()
+{
+	adb shell "su -c \"\""
+	return $?
+}
+
+function isAdbOk()
+{
+	$ADB shell ls / 2>&1 > /dev/null
+	return $?
+}
+
+function isAdbRoot()
+{
+	local adbResult="/tmp/$$.adbResult"
+
+	cat /dev/null > $adbResult
+	{
+		LOGD "Check can use adb root..."
+		rootResult=$($ADB root)
+		rootReturn=$?
+
+		LOGD "rootResult: $rootResult, rootReturn:$rootReturn"
+
+		if [ "$rootReturn" == "0" ];then
+			if [ "x$(echo $rootResult | grep 'not' -so)" != "xnot" ];then
+				LOGD "adb root success"
+				echo "0" > $adbResult
+			fi
+		fi
+		exit
+	} &
+
+	sleep 5
+	if [ "$(cat $adbResult)" == "0" ];then
+		rm $adbResult
+		LOGD "can use adb root now"
+		return 0
+	else
+		rm $adbResult
+		return 1
+	fi
+}
+
+
+function canRoot()
+{
+	local canRoot=1
+	isAdbOk
+
+	if [ $? == "0" ];then
+		isAdbRoot
+		if [ $? != "0" ];then
+			isSuOk
+			if [ $? == "0" ];then
+				canRoot=0
+			fi
+		else
+			canRoot=0
+		fi
+
+	fi
+	return $canRoot
+}
+
+############# set up makefile ################
+
+function getDensity()
+{
+	lcd_density=$($ADB shell getprop \
+		| grep "ro.sf.lcd_density" \
+		| awk 'BEGIN{FS="[:\[\]]"}{print $5}')
+
+	if [ $? == "0" ] && [ "x$lcd_density" != "x" ];then
+		density=$(grep "$lcd_density" $DENSITY_CFG | cut -d ':' -f2)
+		if [ $? == "0" ] && [ "x$density" != "x" ];then
+			DENSITY=$density
+		fi
+	fi
+}
+
+function getvendorModifyJars()
+{
+	frameworkListFile=$(mktemp -t -u frameworkList.XXXX)
+
+	$ADB shell "if [ -f /data/local/tmp/framework-list ]; then rm /data/local/tmp/framework-list; fi"
+	$ADB shell "ls /system/framework/ > /data/local/tmp/framework-list"
+	$ADB pull /data/local/tmp/framework-list $frameworkListFile 2>&1 > /dev/null
+
+	if [ -e $frameworkListFile ]; then
+		vendor_modify_jars=$(grep "\.jar" $frameworkListFile \
+			| sed "s/\.jar//g" \
+			| egrep $VENDOR_MODIFY_JARS_SUGGEST \
+			| sed ":a;N;s/\n/ /g;ba")
+		rm $frameworkListFile
+	else
+		return 1
+	fi
+}
+
+
+function get_config_value_from_makefile()
+{
+	local makefile=$1
+	local prop=$2
+	local result_line_count
+	local base
+
+	if [ ! -f $makefile ];then
+		LOGE "$makefile doesn't exist!!";
+		return 1
+	fi
+
+	# get the base rom type of project
+	# if you doesn't config BAIDU_BASE_DEVICE_PROP_NAME in project's makefile, just ignore this project
+	# if you config more than one BAIDU_BASE_DEVICE_PROP_NAME in project's makefile, exit with error
+	result_line_count=`grep "^[ ]*$prop" $makefile -w | wc | awk '{print $1}'`
+	if [ $result_line_count = "0" ];then
+		LOGW "$makefile's $prop does't config!!";
+		return 1
+	elif [ $result_line_count != "1" ];then
+		LOGE "$makefile's $prop define is wrong!!";
+		exit 1;
+	else
+		base=`grep "^[ ]*$prop" $makefile -w \
+			| awk -F= '{print $NF}' | sed 's/^ *//g;s/$ *//g'`
+
+		if [ $? != "0" ] || [ "x$base" = "x" ];then
+			LOGW "can't get base from $makefile"
+			LOGW "make sure \"$prop\" in $makefile is right"
+			return 1;
+		fi
+
+		echo "$base"
+		return 0
+	fi
+}
+
+function getvendorSavedApps()
+{
+	appListFile=$(mktemp -t -u appList.XXXX)
+
+	$ADB shell "if [ -f /data/local/tmp/app-list ]; then rm /data/local/tmp/app-list; fi"
+	$ADB shell "ls /system/app/ > /data/local/tmp/app-list"
+	$ADB pull /data/local/tmp/app-list $appListFile 2>&1 > /dev/null
+
+	vendor_saved_apps_configed=$(get_config_value_from_makefile $NEW_MAKEFILE "vendor_saved_apps")
+
+	if [ $? == "0" ] && [ "x$vendor_saved_apps_configed" != "x" ];then
+		vendor_saved_apps_configed=$(echo $vendor_saved_apps_configed \
+			| sed 's/^[ \t]*//g' \
+			| sed 's/[ \t]*$//g' \
+			| sed 's/[ \t][ \t]*/ /g' \
+			| sed 's/ /\|/g')
+
+		vendor_saved_apps_suggest=$VENDOR_SAVED_APPS_SUGGEST
+		if [ "x$vendor_saved_apps_configed" != "x" ];then
+			vendor_saved_apps_suggest="$vendor_saved_apps_suggest|$vendor_saved_apps_configed"
+		fi;
+
+		if [ -e $appListFile ]; then
+			vendor_saved_apps=$(grep "\.apk" $appListFile \
+				| sed "s/\.apk//g" \
+				| egrep $vendor_saved_apps_suggest \
+				| sed ":a;N;s/\n/ /g;ba")
+			rm $appListFile
+		else
+			return 1
+		fi
+	fi
+}
+
+function setupMakefile()
+{
+	LOGD "setup the Makefile first!"
+
+	if [ ! -f $TEMPLATE_MAKEFILE ]; then
+		LOGE "$TEMPLATE_MAKEFILE doesn't exist! "
+		LOGE "make sure you do source ./build/envsetup first!"
+		return 1
+	fi
+	cp $TEMPLATE_MAKEFILE $NEW_MAKEFILE
+
+	getvendorModifyJars
+	LOGD "vendor_modify_jars: $vendor_modify_jars"
+	if [ $? == "0" ] && [ "x$vendor_modify_jars" != "x" ]; then
+		LOGD "set vendor_modify_jars to $NEW_MAKEFILE"
+		LOGD "vendor_modify_jars := $vendor_modify_jars"
+		sed -i "s/^[ \t]*vendor_modify_jars[ \t]*\:.*/vendor_modify_jars \:\= $vendor_modify_jars/g" $NEW_MAKEFILE
+	else
+		LOGE "get the files list in /system/framework failed! "
+		LOGE "please check the adb is ok! "
+		return 1
+	fi
+
+	getDensity
+	if [ "x$DENSITY" != "x" ]; then
+		LOGD "set up DENSITY to $DENSITY"
+		LOGD "DENSITY := $DENSITY"
+		sed -i "s/^[ \t]*DENSITY[ \t]*\:.*/DENSITY \:\= $DENSITY/g" $NEW_MAKEFILE
+	fi
+
+	getvendorSavedApps
+	if [ "x$vendor_saved_apps" != "x" ]; then
+		LOGD "set vendor_saved_apps to $NEW_MAKEFILE"
+		LOGD "vendor_saved_apps := $vendor_saved_apps"
+		sed -i "s/^[ \t]*vendor_saved_apps[ \t]*\:.*/vendor_saved_apps \:\= $vendor_saved_apps/g" $NEW_MAKEFILE
+	fi
+}
+
+############  make new project ###############
+
+# start a new project
+function newMakefile()
+{
+	if [ -f $NEW_MAKEFILE ]; then
+		LOGE "$NEW_MAKEFILE already exist!"
+		return 1
+	fi
+
+	canRoot
+	if [ $? != "0" ];then
+		LOGE "Please root your phone, and make sure the usb connect is fine! "
+		return 1
+	fi
+
+	LOGD "begin start a new project!"
+	setupMakefile
+
+	if [ $? == "0" ];then
+		LOGD "make config success!"
+	else
+		LOGE "set up Makefile error!"
+		return 1
+	fi
+}
+
+newMakefile
+if [ $? == "0" ]; then
+	LOGD "SUCCESS"
+else
+	LOGE "FAILED"
+	exit 1
+fi
