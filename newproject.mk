@@ -7,20 +7,12 @@ TARGET_FILES_FROM_DEVICE:= $(PORT_TOOLS)/target_files_from_device.sh
 
 ############# newproject, oemotarom #####################
 ./PHONY: newproject oemotarom
-ifeq ($(PRJ_BOOT_IMG), $(wildcard $(PRJ_BOOT_IMG)))
+
 newproject: prepare-vendor prepare-vendor-boot prepare-vendor-recovery prepare-metainf decodefile
 	$(hide) if [ -f $(OUT_DIR)/build-info-to-user.txt ];then \
 				cat $(OUT_DIR)/build-info-to-user.txt; \
 			fi
 	$(hide) echo ">>> newproject done"
-else
-newproject: prepare-vendor prepare-vendor-recovery prepare-metainf decodefile
-	$(hide) if [ -f $(OUT_DIR)/build-info-to-user.txt ];then \
-				cat $(OUT_DIR)/build-info-to-user.txt; \
-			fi
-	$(hide) echo ">>> newproject without preparing vendor/BOOT directory"
-	$(hide) echo ">>> newproject done"
-endif
 
 oemotarom: $(OEM_OTA_ZIP)
 	$(hide) echo ">>> oemotarom done"

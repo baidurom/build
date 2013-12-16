@@ -352,6 +352,7 @@ $(OUT_OBJ_META)/filesystem_config.txt: $(VENDOR_META)/filesystem_config.txt
 	$(hide) cp $(VENDOR_META)/filesystem_config.txt $(OUT_OBJ_META)/filesystem_config.txt;
 
 $(OUT_OBJ_META)/misc_info.txt: $(VENDOR_META)/misc_info.txt
+	$(hide) mkdir -p $(OUT_OBJ_META)
 	$(hide) cp $< $@
 
 $(OUT_META)/misc_info.txt: $(OUT_OBJ_META)/misc_info.txt
@@ -361,6 +362,7 @@ $(OUT_META)/misc_info.txt: $(OUT_OBJ_META)/misc_info.txt
 				sed -i '/tool_extensions/d' $<; \
 				echo "tool_extensions=$(PRJ_ROOT)/$$extensions_path" >> $<; \
 			fi
+	$(hide) mkdir -p $(OUT_META);
 	$(hide) cp $< $@
 
 .PHONY: META

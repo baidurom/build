@@ -36,11 +36,17 @@ if [ -f $(1) ]; then \
 fi
 endef
 
+ifeq ($(strip $(filter boot boot.img, $(vendor_modify_images))),)
+unpack-boot:
+	$(hide) echo ">>> Nothing to do: $@"
+	$(hide) echo ">>> Warning: newproject without preparing vendor/BOOT directory"
+else
 # unpack boot.img to out/obj/BOOT
 unpack-boot: $(PRJ_BOOT_IMG)
 	$(hide) rm -rf $(OUT_OBJ_BOOT)
 	$(hide)	$(UNPACK_BOOT_PY) $(PRJ_BOOT_IMG) $(OUT_OBJ_BOOT);
 	$(hide) $(call enable_adb_root,$(OUT_OBJ_BOOT)/RAMDISK/default.prop)
+endif
 
 ###### pack boot ######
 ifeq ($(strip $(filter boot boot.img, $(vendor_modify_images))),)
@@ -54,7 +60,7 @@ $(OUT_BOOT_IMG):
 	$(hide) echo ">>> Target Out ==> $@, $(OUT_DIR)/$(BOOT_IMG)"
 else
 bootimage:
-	@ echo ">>> Nothing to do: $@"
+	$(hide) echo ">>> Nothing to do: $@"
 endif
 
 else
