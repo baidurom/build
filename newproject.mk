@@ -49,7 +49,7 @@ endif
 ./PHONY: prepare-vendor-boot
 prepare-vendor-boot : unpack-boot prepare-vendor
 	$(hide) rm -rf $(VENDOR_BOOT)
-	$(hide) mv $(OUT_OBJ_BOOT) $(VENDOR_BOOT)
+	$(hide) if [ -d $(OUT_OBJ_BOOT) ]; then mv $(OUT_OBJ_BOOT) $(VENDOR_BOOT); fi;
 	$(hide) echo ">>> prepare-vendor-boot done"
 
 ./PHONY: prepare-vendor-recovery
