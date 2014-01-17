@@ -104,3 +104,9 @@ else \
 fi
 endef
 
+define getprop
+if [ -f $(2) ]; then \
+    awk -F= '/$(1)/{print $$2}' $(2); \
+fi
+endef
+

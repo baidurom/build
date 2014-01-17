@@ -5,12 +5,6 @@ sub_space := \#
 
 ################# buildprop ############################
 
-define getprop
-if [ -f $(2) ]; then \
-    awk -F= '/$(1)/{print $$2}' $(2); \
-fi
-endef
-
 $(foreach property,$(BAIDU_PROPERTY_FOLLOW_BASE),\
     $(eval propValue := $(shell $(call getprop,$(property),$(BAIDU_SYSTEM)/build.prop))) \
     $(if $(propValue),\
@@ -63,6 +57,16 @@ ifeq ($(strip $(ROM_OFFICIAL_VERSION)),)
 ROM_OFFICIAL_VERSION := $(shell $(call getprop,ro.official.version,$(BAIDU_SYSTEM)/build.prop))
 export ROM_OFFICIAL_VERSION
 endif
+
+ifeq ($(strip $(VERSION_NUMBER)),)
+BASE_VERSION_NUMBER := $(shell $(call getprop,ro.build.display.id,$(BAIDU_SYSTEM)/build.prop))
+ifneq ($(strip $(BASE_VERSION_NUMBER)),)
+VERSION_NUMBER := $(shell echo $(BASE_VERSION_NUMBER) \
+	| grep ".*_[RSD]_.*" | sed "s/.*\(_[RSD]_.*\)/$(PROJECT_NAME_UP)\1/g")
+endif #ifneq ($(strip $(BASE_VERSION_NUMBER)),)
+endif #ifeq ($(strip $(ROM_OFFICIAL_VERSION)),)
+
+$(info # VERSION_NUMBER: $(VERSION_NUMBER))
 
 build_prop $(OUT_SYSTEM)/build.prop: $(OUT_OBJ_SYSTEM)/baidu.build.prop
 build_prop $(OUT_SYSTEM)/build.prop: $(VENDOR_BUILD_PROP)

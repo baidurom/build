@@ -11,6 +11,8 @@ ifeq ($(strip $(PRJ_NAME)),)
     PRJ_NAME := $(shell basename $(PRJ_ROOT))
 endif
 
+PROJECT_NAME_UP := $(strip $(shell echo $(PRJ_NAME) | tr '[a-z]' '[A-Z]'))
+
 # if doesn't set, set to $(PRJ_ROOT)/logo.bin
 # which means where the logo.bin is, only for mtk
 # if the file $(PRJ_LOGO_BIN) doesn't exist, ignore
@@ -34,7 +36,7 @@ ifneq ($(strip $(version)),)
 VERSION_NUMBER := $(version)
 else
 VERSION_NUMBER :=
-endif
+endif #ifneq ($(strip $(version)),)
 
 ##################### density ############################
 ALL_DENSITY := \

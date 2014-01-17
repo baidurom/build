@@ -235,3 +235,22 @@ function makeconfig()
 	fi
 }
 
+function otadiff()
+{
+    OTA_FROM_TARGET=$PORT_ROOT/tools/releasetools/ota_from_target_files
+    TEST_KEY=$PORT_ROOT/tools/security/testkey
+    out_zip=$3
+
+    if [ $# -lt 2 ]; then
+        echo "Usage: otadiff pre-target-files.zip target-files.zip [ota-diff.zip]"
+        echo "       pre-target-files.zip: the previous target files"
+        echo "       target-files.zip: the current target files"
+        echo "       [ota-diff.zip]: the ota update zip"
+        exit 1
+    elif [ $# -eq 2 ]; then
+        out_zip=ota-diff.zip
+    fi
+
+    $OTA_FROM_TARGET -k $TEST_KEY -i $1 $2 $3 $out_zip
+    echo ">>> out: $out_zip"
+}
