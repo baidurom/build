@@ -147,8 +147,8 @@ $(2): $(1) $(VENDOR_METAINF)
 	$(hide) echo ">>> sign $(1) to $(2)";
 	$(hide) if [ ! -d `dirname $(2)` ]; then mkdir -p `dirname $(2)`; fi;	
 	$(hide) rm -rf $$(tempJarDir);
-	$(hide) mkdir -p $$(tempJarDir)/Jar;
-	$(hide) cp -rf $(VENDOR_METAINF)/* $$(tempJarDir)/Jar;
+	$(hide) mkdir -p $$(tempJarDir);
+	$(hide) if [ -d $(VENDOR_METAINF) ]; then cp -rf $(VENDOR_METAINF) $$(tempJarDir)/Jar; fi;
 	$(hide) cp $(1) $$(tempJarDir);
 	$(hide) cd $$(tempJarDir) && jar xf $$(jarBaseName);
 	$(hide) mv $$(tempJarDir)/classes.dex $$(tempJarDir)/Jar; 
@@ -180,11 +180,15 @@ echo ">>> use $(1) to update internal resources in $(2)"; \
 $(UPDATE_INTERNAL_RESOURCE) $(1) $(2)
 endef
 
+define hasInternalResource
+-f "$(strip $(1))/$(FRWK_INTER_RES_POS)/R.smali"
+endef
+
 # custom jar and copy package define in BAIDU_PREBUILT_PACKAGE_xxx
 define custom_jar_with_package_copy
-	$(hide) if [ $(1) = "framework" ];then \
-			$(call update_internal_resource,$(MERGE_ADD_TXT),$(4)/$(FRWK_INTER_RES_POS)); \
-		fi;
+	$(hide) if [ $(call hasInternalResource,$(4)) ];then \
+				$(call update_internal_resource,$(MERGE_ADD_TXT),$(4)/$(FRWK_INTER_RES_POS)); \
+			fi;
 ifneq ($(strip $(baidu_prebuilt_package)),)
 	$(hide) echo ">>> begin copy baidu packages: \"$(baidu_prebuilt_package)\"\n \
 		\t\tfrom $(BAIDU_SYSTEM)/$(2) to $(4)"
@@ -201,12 +205,12 @@ endef
 # custom jar: call custom_app.sh in $(PRJ_ROOT)
 # it would be called when build a jar
 define custom_jar
-	$(hide) if [ $(1) = "framework" ];then \
-			$(call update_internal_resource,$(MERGE_ADD_TXT),$(2)/$(FRWK_INTER_RES_POS)); \
-		fi;
+	$(hide) if [ $(call hasInternalResource,$(4)) ];then \
+				$(call update_internal_resource,$(MERGE_ADD_TXT),$(2)/$(FRWK_INTER_RES_POS)); \
+			fi;
 	$(hide) if [ -f $(PRJ_CUSTOM_JAR) ];then \
-			$(PRJ_CUSTOM_JAR) $(1) $(2); \
-		fi
+				$(PRJ_CUSTOM_JAR) $(1) $(2); \
+			fi
 endef
 
 # custom post: call custompost.sh in $(PRJ_ROOT)

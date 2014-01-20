@@ -66,11 +66,11 @@ class UpInterrJava(object):
                     fileContent = fileContent.replace("\n%s" % DIRECT_METHOD_FLAG, "%s\n%s" % (linefill, DIRECT_METHOD_FLAG), 1)
 
                 resFile.seek(0, 0)
-		resFile.truncate()
+                resFile.truncate()
                 resFile.write(fileContent)
                 resFile.close()
             else:
-                print "%s not exist!!" % resFile
+                print "%s not exist!!" % resFileName
 
 def main():
     if len(sys.argv) < 3:
