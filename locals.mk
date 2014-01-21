@@ -38,6 +38,10 @@ else
 VERSION_NUMBER :=
 endif #ifneq ($(strip $(version)),)
 
+ifeq ($(strip $(SIGN_OTA)),)
+SIGN_OTA := true
+endif
+
 ##################### density ############################
 ALL_DENSITY := \
      mdpi \

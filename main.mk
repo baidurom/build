@@ -517,13 +517,18 @@ else
 FORMAT_PARAM :=
 endif
 
+ifneq ($(strip $(SIGN_OTA)),true)
+SIGN_OTA_PARAM := --no_sign
+endif
+
 $(OUT_DIR)/ota_$(PRJ_NAME).zip: $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
 	$(hide) $(OTA_FROM_TARGET_FILES) \
 			$(FORMAT_PARAM) \
+			$(SIGN_OTA_PARAM) \
 			-n -k $(OTA_CERT) \
 			$(LOGO_BIN_PARAM) \
 			$(OUT_TARGET_ZIP) \
-			$(OUT_DIR)/ota_$(PRJ_NAME).zip; \
+			$(OUT_DIR)/ota_$(PRJ_NAME).zip;
 
 ota-files-zip: $(OUT_DIR)/ota_$(PRJ_NAME).zip mkuserimg
 	$(hide) echo ">>> out: $(OUT_DIR)/ota_$(PRJ_NAME).zip";

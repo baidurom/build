@@ -97,7 +97,9 @@ function canRoot()
 		else
 			canRoot=0
 		fi
-
+        else
+            LOGE "adb is not installed, please install android-sdk and add platform-tools to PATH"
+            exit 1
 	fi
 	return $canRoot
 }
