@@ -511,10 +511,14 @@ $(PRJ_OUT_TARGET_ZIP): target-files
 	$(hide) cd $(OUT_TARGET_DIR) && zip -q -r -y target-files.zip *;
 	$(hide) mv $(OUT_TARGET_DIR)/target-files.zip $@;
 
-ifeq ($(USE_FIVE_PARAM_FORMAT),true)
-FORMAT_PARAM := -f 5
-else
-FORMAT_PARAM :=
+ifeq ($(FORMAT_PARAM_NUM),)
+  ifeq ($(USE_FIVE_PARAM_FORMAT),true)
+    FORMAT_PARAM_NUM := 5
+  endif
+endif
+
+ifneq ($(FORMAT_PARAM_NUM),)
+FORMAT_PARAM := -f $(FORMAT_PARAM_NUM)
 endif
 
 ifneq ($(strip $(SIGN_OTA)),true)
