@@ -247,6 +247,15 @@ BAIDU_PROPERTY_OVERRIDES := \
 	persist.sys.timezone=Asia/Shanghai \
 	ro.rom.mt.font=0
 
+BAIDU_PREBUILT_LOW_RAM_REMOVE := \
+	app/BaiduClickSearch.apk \
+	app/BaiduVirusKilling.apk \
+	app/Yellowpages.apk \
+	app/BaiduReader.apk \
+	app/FindmeDM.apk \
+	lib/libacs.so \
+	lib/libbdocr.so
+
 BAIDU_PROPERTY_FOLLOW_BASE := \
 	ro.baidu.build.hardware.version \
 	ro.baidu.build.software \
@@ -274,3 +283,8 @@ endif
 
 BAIDU_PREBUILT_DIRS := $(sort $(strip $(baidu_saved_dirs)) $(BAIDU_PREBUILT_DIRS))
 BAIDU_PREBUILT := $(sort $(strip $(baidu_saved_files)) $(BAIDU_PREBUILT))
+
+ifeq ($(strip $(LOW_RAM_DEVICE)),true)
+$(info low ram device, remove $(BAIDU_PREBUILT_LOW_RAM_REMOVE))
+BAIDU_PREBUILT := $(filter-out $(BAIDU_PREBUILT_LOW_RAM_REMOVE),$(BAIDU_PREBUILT))
+endif
