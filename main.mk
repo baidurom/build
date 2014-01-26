@@ -150,7 +150,7 @@ VENDOR_FRAMEWORK_APKS := $(patsubst %,$(VENDOR_SYSTEM)/%, \
 
 FRAMEWORK_APKS_TARGETS := $(patsubst %,$(OUT_SYSTEM)/%,\
     $(strip $(sort $(filter framework/%.apk,\
-        $(ALL_BAIDU_FILES) \
+        framework/framework-res-yi.apk \
         $(ALL_VENDOR_FILES)))))
 
 IF_BAIDU_RES	:= $(OUT_OBJ_FRAMEWORK)/ifbaidu
