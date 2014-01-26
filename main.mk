@@ -491,6 +491,9 @@ $(OUT_SYSTEM_BIN)/baidu_service:
 				cp $(SOURCE_BOOT_RAMDISK_SERVICEEXT) $(OUT_SYSTEM_BIN); \
 			fi;
 	$(hide) echo "#!/system/bin/sh\n" > $(obj_baidu_service)
+	$(hide) echo "# set su's permission" >> $(obj_baidu_service)
+	$(hide) echo "toolbox chown root:root /system/xbin/su" >> $(obj_baidu_service)
+	$(hide) echo "toolbox chmod 6755 /system/xbin/su\n" >> $(obj_baidu_service)
 	$(hide) echo "# used to start baidu's daemon, invoid to modify boot.img! " >> $(obj_baidu_service)
 	$(hide) $(foreach service,$(BAIDU_SERVICES),\
 				echo "$(service) &" >> $(obj_baidu_service);)
@@ -538,6 +541,8 @@ ota-files-zip: $(OUT_DIR)/ota_$(PRJ_NAME).zip mkuserimg
 	$(hide) echo ">>> out: $(OUT_DIR)/ota_$(PRJ_NAME).zip";
 
 .PHONY: mkuserimg
+
+ifneq ($(strip $(NO_SYSTEM_IMG)),true)
 mkuserimg: $(OUT_TARGET_ZIP)
 	$(hide) echo "OUT_TARGET_ZIP: $(OUT_TARGET_ZIP)"
 	$(hide) echo "PRJ_OUT_TARGET_ZIP: $(PRJ_OUT_TARGET_ZIP)"
@@ -545,6 +550,10 @@ mkuserimg: $(OUT_TARGET_ZIP)
 			$(OUT_DIR)/target-files.signed.zip;
 	$(hide) unzip -o $(OUT_DIR)/target-files.signed.zip -d $(OUT_DIR);
 	$(hide) rm -f $(OUT_DIR)/target-files.signed.zip;
+else
+mkuserimg:
+	$(hide) echo "nothing to do for mksuerimg"
+endif
 
 ##################  server-ota #########################
 ifneq ($(wildcard $(PORT_BUILD)/server_ota.mk),)
