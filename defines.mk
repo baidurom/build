@@ -479,8 +479,7 @@ endef
 
 # dexopt a apk
 define dex_opt_app
-if [ "x`grep "\\"$(1)\.apk\\"" $(OUT_ODEX_META)/apkcerts.txt | grep "\"PRESIGNED\""`" = "x" ] \
-	&& [ "x`unzip -l "$(OUT_ODEX_APP)/$(1).apk" | grep -o "classes.dex"`" = "xclasses.dex" ]; then \
+if [ "x`unzip -l "$(OUT_ODEX_APP)/$(1).apk" | grep -o "classes.dex"`" = "xclasses.dex" ]; then \
 	echo ">>> begin odex for $(1)"; \
 	$(call dexopt_one_file,$(OUT_ODEX_APP)/$(1).apk,$(OUT_ODEX_APP)/$(1).odex) || exit $?; \
 	$(call delete_classes_dex,$(OUT_ODEX_APP)/$(1).apk) || exit $?; \
