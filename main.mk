@@ -431,20 +431,21 @@ $(OUT_OBJ_META)/apkcerts.txt:
 	$(hide) $(foreach app,$(BAIDU_PRESIGNED_APPS),\
 			echo "name=\"`basename $(app)`\" certificate=\"PRESIGNED\" private_key=\"\"" >> $@;)
 
+$(OUT_META)/apkcerts.txt: tmpFile := $(shell mktemp -u $(OUT_OBJ_META)/apkcerts.XXXX)
 $(OUT_META)/apkcerts.txt: target-files-system $(OUT_OBJ_META)/apkcerts.txt
 	$(hide) echo ">>> use testkey to sign all of the apks, except presigned apk, CERTS_PATH:$(CERTS_PATH)"
 	$(hide) mkdir -p $(OUT_OBJ_META)
-	$(hide) find $(OUT_SYSTEM) -name "*.apk" | awk -F '\/' '{print $$NF}' > $(OUT_OBJ_META)/apkcerts.txt;
-	$(hide) sed -i 's#^#name="#g' $(OUT_OBJ_META)/apkcerts.txt;
+	$(hide) find $(OUT_SYSTEM) -name "*.apk" | awk -F '\/' '{print $$NF}' > $(tmpFile);
+	$(hide) sed -i 's#^#name="#g' $(tmpFile);
 	$(hide) sed -i 's#$$#" certificate="$(CERTS_PATH)/testkey.x509.pem" private_key="$(CERTS_PATH)/testkey.pk8"#g' \
-			$(OUT_OBJ_META)/apkcerts.txt;
+			$(tmpFile);
 	$(hide) for apk in $(BAIDU_PRESIGNED_APPS); do \
 				apkbasename=`echo $$apk | awk 'BEGIN{FS="[\/\.]"}{print $$(NF-1)}'`; \
-				sed -i "/\"$$apkbasename\"/d" $(OUT_OBJ_META)/apkcerts.txt; \
-				echo "name=\"$$apk\" certificate=\"PRESIGNED\" private_key=\"\"" >> $(OUT_OBJ_META)/apkcerts.txt; \
+				sed -i "/\"$$apkbasename\"/d" $(tmpFile); \
+				echo "name=\"$$apk\" certificate=\"PRESIGNED\" private_key=\"\"" >> $(tmpFile); \
 			done;
 	$(hide) mkdir -p $(OUT_META)
-	$(hide) mv $(OUT_OBJ_META)/apkcerts.txt $(OUT_META)/apkcerts.txt;
+	$(hide) mv $(tmpFile) $(OUT_META)/apkcerts.txt;
 	$(hide) echo ">>> Update Out ==> $(OUT_META)/apkcerts.txt";
 endif
 
@@ -492,8 +493,10 @@ $(OUT_SYSTEM_BIN)/baidu_service:
 			fi;
 	$(hide) echo "#!/system/bin/sh\n" > $(obj_baidu_service)
 	$(hide) echo "# set su's permission" >> $(obj_baidu_service)
+	$(hide) echo "toolbox mount -o remount,rw /system" >> $(obj_baidu_service)
 	$(hide) echo "toolbox chown root:root /system/xbin/su" >> $(obj_baidu_service)
 	$(hide) echo "toolbox chmod 6755 /system/xbin/su\n" >> $(obj_baidu_service)
+	$(hide) echo "toolbox mount -o remount,ro /system" >> $(obj_baidu_service)
 	$(hide) echo "# used to start baidu's daemon, invoid to modify boot.img! " >> $(obj_baidu_service)
 	$(hide) $(foreach service,$(BAIDU_SERVICES),\
 				echo "$(service) &" >> $(obj_baidu_service);)
