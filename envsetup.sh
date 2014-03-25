@@ -147,6 +147,16 @@ function unpack_bootimg()
 	$PORT_ROOT/tools/bootimgpack/unpack_bootimg.py $@
 }
 
+function num2name()
+{
+	$PORT_ROOT/tools/accessmethod/num2name.py $@
+}
+
+function name2num()
+{
+	$PORT_ROOT/tools/accessmethod/name2num.py $@
+}
+
 setupCdFunction
 
 if [ -f $PORT_BUILD/Makefile ]; then

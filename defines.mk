@@ -33,6 +33,27 @@ rm -rf ~/apktool/framework/[1-9]-$(APKTOOL_MERGED_TAG).apk;\
 $(INSTALL_FRAMEWORKS) $(1) $(APKTOOL_MERGED_TAG)
 endef
 
+define decode
+	$(hide) rm -rf $(2)
+	$(hide) mkdir -p `dirname $(2)`
+	$(hide) $(APKTOOL) d -f -t $(3) $(1) $(2)
+endef
+
+define decode_baidu
+$(2)/apktool.yml: $(IF_BAIDU_RES) $(1)
+$(call decode,$(1),$(2),$(APKTOOL_BAIDU_TAG))
+endef
+
+define decode_vendor
+$(2)/apktool.yml: $(IF_VENDOR_RES) $(1)
+$(call decode,$(1),$(2),$(APKTOOL_VENDOR_TAG))
+endef
+
+define decode_merged
+$(2)/apktool.yml: $(IF_MERGED_RES) $(1)
+$(call decode,$(1),$(2),$(APKTOOL_MERGED_TAG))
+endef
+
 # used for aapt to merged resouce
 define get_baidu_installed_framework_params
 `ls ~/apktool/framework/[1-9]-$(APKTOOL_BAIDU_TAG).apk | sed 's/^/-I /g'`

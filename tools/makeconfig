@@ -15,7 +15,10 @@ TEMPLATE_MAKEFILE=$PORT_ROOT/reference/configs/makeconfig/Makefile.template
 VENDOR_MODIFY_JARS_SUGGEST="framework|HTCExtension|services|telephony-common"
 VENDOR_SAVED_APPS_SUGGEST="MtkBt|FMTransmitter|FMRadio|Bluetooth|FmRadio"
 
+GET_RESOLUTION_BIN=$PORT_ROOT/build/tools/getresolution
+
 DENSITY=""
+RESOLUTION=""
 vendor_modify_jars=""
 vendor_saved_apps=""
 
@@ -105,6 +108,21 @@ function canRoot()
 }
 
 ############# set up makefile ################
+
+function getResolution()
+{
+	if [ -f $GET_RESOLUTION_BIN ];then
+		getResolutionBase=$(basename $GET_RESOLUTION_BIN)
+		$ADB push $GET_RESOLUTION_BIN /data/local/tmp/
+		$ADB shell chmod 777 /data/local/tmp/$getResolutionBase
+		result=$($ADB shell /data/local/tmp/$getResolutionBase | grep "Resolution")
+		if [ "x$result" != "x" ];then
+			RESOLUTION=$(echo $result | awk '{print $2}')
+		fi
+	else
+		LOGE "$GET_RESOLUTION_BIN doesn't exist!"
+	fi
+}
 
 function getDensity()
 {
@@ -239,6 +257,12 @@ function setupMakefile()
 		LOGD "set up DENSITY to $DENSITY"
 		LOGD "DENSITY := $DENSITY"
 		sed -i "s/^[ \t]*DENSITY[ \t]*\:.*/DENSITY \:\= $DENSITY/g" $NEW_MAKEFILE
+	fi
+
+	getResolution
+	if [ "x$RESOLUTION" != "x" ];then
+		LOGD "set up RESOLUTION to $RESOLUTION"
+		sed -i "s/^[ \t]*RESOLUTION[ \t]*\:.*/RESOLUTION \:\= $RESOLUTION/g" $NEW_MAKEFILE
 	fi
 
 	getvendorSavedApps

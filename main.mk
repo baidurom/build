@@ -17,13 +17,13 @@ $(foreach mk, \
 .PHONY: otapackage ota fullota
 
 ifeq ($(strip $(wildcard $(BAIDU_SYSTEM))),)
-$(info # no source directory, need prepare-source)
-ota fullota otapackage: check-project prepare-source
+$(info # no source directory, need $(PREPARE_SOURCE))
+ota fullota otapackage: check-project $(PREPARE_SOURCE)
 	$(hide) cd $(PRJ_ROOT) && $(MAKE) ota-files-zip
 else
 ifneq ($(strip $(serverdir)),)
-$(info # serverdir is not null, need prepare-source: $(serverdir))
-ota fullota otapackage: check-project prepare-source
+$(info # serverdir is not null, need $(PREPARE_SOURCE): $(serverdir))
+ota fullota otapackage: check-project $(PREPARE_SOURCE)
 	$(hide) cd $(PRJ_ROOT) && $(MAKE) ota-files-zip
 else
 ota fullota otapackage: check-project
@@ -73,7 +73,7 @@ clean-out:
 
 CLEAN_TARGETS += clean-source
 
-CLEAN_SOURCE_REMOVE_TARGETS := $(patsubst %,$(BAIDU_DIR)/%,$(filter-out $(notdir $(BAIDU_ZIP) $(BAIDU_BASE_ZIP)) \
+CLEAN_SOURCE_REMOVE_TARGETS := $(patsubst %,$(BAIDU_DIR)/%,$(filter-out $(notdir $(BAIDU_ZIP) $(BAIDU_BASE_ZIP) $(BAIDU_LAST_ZIP)) \
                                     timestamp,$(shell if [ -d $(BAIDU_DIR) ]; then ls $(BAIDU_DIR); fi)))
 .PHONY: clean-source
 clean-source:
@@ -153,11 +153,8 @@ FRAMEWORK_APKS_TARGETS := $(patsubst %,$(OUT_SYSTEM)/%,\
         framework/framework-res-yi.apk \
         $(ALL_VENDOR_FILES)))))
 
-IF_BAIDU_RES	:= $(OUT_OBJ_FRAMEWORK)/ifbaidu
-IF_VENDOR_RES	:= $(OUT_OBJ_FRAMEWORK)/ifvendor
-IF_MERGED_RES	:= $(OUT_OBJ_FRAMEWORK)/ifmerged
 IF_ALL_RES		:= $(IF_BAIDU_RES) $(IF_VENDOR_RES) $(IF_MERGED_RES)
-$(IF_BAIDU_RES): $(BAIDU_FRAMEWORK_APKS)
+$(IF_BAIDU_RES): $(BAIDU_FRAMEWORK_APKS) $(PREPARE_SOURCE)
 	$(hide) $(call apktool_if_baidu,$(BAIDU_FRAMEWORK))
 	$(hide) echo ">>> apktool if baidu framework res done"
 	$(hide) mkdir -p `dirname $@`
@@ -229,12 +226,18 @@ SIGN_APPS += \
 
 clean-framework-res: remove_targets += $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp
 # use aapt to generate the framework-res.apk
+$(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: minSdkVersion := $(shell $(call getMinSdkVersionFromApktoolYml,\
+																$(VENDOR_FRAMEWORK_RES_OUT)/apktool.yml))
+$(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: targetSdkVersion := $(shell $(call getTargetSdkVersionFromApktoolYml,\
+																$(VENDOR_FRAMEWORK_RES_OUT)/apktool.yml))
 $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: $(FRAMEWORK_RES_SOURCE) 
 	$(hide) echo ">>> start auto merge framework-res"
 	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK)
 	$(AAPT) package -u -x -z \
 		$(addprefix -c , $(PRIVATE_PRODUCT_AAPT_CONFIG)) \
 		$(addprefix --preferred-configurations , $(PRIVATE_PRODUCT_AAPT_PREF_CONFIG)) \
+		$(if $(minSdkVersion),$(addprefix --min-sdk-version , $(minSdkVersion)),) \
+		$(if $(targetSdkVersion),$(addprefix --target-sdk-version , $(targetSdkVersion)),) \
 		-M $(VENDOR_FRAMEWORK_RES_OUT)/AndroidManifest.xml \
 		-A $(VENDOR_FRAMEWORK_RES_OUT)/assets \
 		$(if $(PRJ_FRAMEWORK_OVERLAY_SOURCES),-S $(PRJ_FRAMEWORK_OVERLAY),)\
@@ -431,21 +434,20 @@ $(OUT_OBJ_META)/apkcerts.txt:
 	$(hide) $(foreach app,$(BAIDU_PRESIGNED_APPS),\
 			echo "name=\"`basename $(app)`\" certificate=\"PRESIGNED\" private_key=\"\"" >> $@;)
 
-$(OUT_META)/apkcerts.txt: tmpFile := $(shell mktemp -u $(OUT_OBJ_META)/apkcerts.XXXX)
 $(OUT_META)/apkcerts.txt: target-files-system $(OUT_OBJ_META)/apkcerts.txt
 	$(hide) echo ">>> use testkey to sign all of the apks, except presigned apk, CERTS_PATH:$(CERTS_PATH)"
 	$(hide) mkdir -p $(OUT_OBJ_META)
-	$(hide) find $(OUT_SYSTEM) -name "*.apk" | awk -F '\/' '{print $$NF}' > $(tmpFile);
-	$(hide) sed -i 's#^#name="#g' $(tmpFile);
+	$(hide) find $(OUT_SYSTEM) -name "*.apk" | awk -F '\/' '{print $$NF}' > $(OUT_OBJ_META)/apkcerts.txt;
+	$(hide) sed -i 's#^#name="#g' $(OUT_OBJ_META)/apkcerts.txt;
 	$(hide) sed -i 's#$$#" certificate="$(CERTS_PATH)/testkey.x509.pem" private_key="$(CERTS_PATH)/testkey.pk8"#g' \
-			$(tmpFile);
+			$(OUT_OBJ_META)/apkcerts.txt;
 	$(hide) for apk in $(BAIDU_PRESIGNED_APPS); do \
 				apkbasename=`echo $$apk | awk 'BEGIN{FS="[\/\.]"}{print $$(NF-1)}'`; \
-				sed -i "/\"$$apkbasename\"/d" $(tmpFile); \
-				echo "name=\"$$apk\" certificate=\"PRESIGNED\" private_key=\"\"" >> $(tmpFile); \
+				sed -i "/\"$$apkbasename\"/d" $(OUT_OBJ_META)/apkcerts.txt; \
+				echo "name=\"$$apk\" certificate=\"PRESIGNED\" private_key=\"\"" >> $(OUT_OBJ_META)/apkcerts.txt; \
 			done;
 	$(hide) mkdir -p $(OUT_META)
-	$(hide) mv $(tmpFile) $(OUT_META)/apkcerts.txt;
+	$(hide) mv $(OUT_OBJ_META)/apkcerts.txt $(OUT_META)/apkcerts.txt;
 	$(hide) echo ">>> Update Out ==> $(OUT_META)/apkcerts.txt";
 endif
 
@@ -491,11 +493,11 @@ $(OUT_SYSTEM_BIN)/baidu_service:
 	$(hide) if [ -f $(SOURCE_BOOT_RAMDISK_SERVICEEXT) ]; then \
 				cp $(SOURCE_BOOT_RAMDISK_SERVICEEXT) $(OUT_SYSTEM_BIN); \
 			fi;
-	$(hide) echo "#!/system/bin/sh\n" > $(obj_baidu_service)
+	$(hide) echo "#!/system/bin/sh" > $(obj_baidu_service)
 	$(hide) echo "# set su's permission" >> $(obj_baidu_service)
 	$(hide) echo "toolbox mount -o remount,rw /system" >> $(obj_baidu_service)
 	$(hide) echo "toolbox chown root:root /system/xbin/su" >> $(obj_baidu_service)
-	$(hide) echo "toolbox chmod 6755 /system/xbin/su\n" >> $(obj_baidu_service)
+	$(hide) echo "toolbox chmod 6755 /system/xbin/su" >> $(obj_baidu_service)
 	$(hide) echo "toolbox mount -o remount,ro /system" >> $(obj_baidu_service)
 	$(hide) echo "# used to start baidu's daemon, invoid to modify boot.img! " >> $(obj_baidu_service)
 	$(hide) $(foreach service,$(BAIDU_SERVICES),\

@@ -76,12 +76,16 @@ PRIVATE_PRODUCT_AAPT_PREF_CONFIG := $(DENSITY)
 BAIDU_DIR          := $(PRJ_ROOT)/baidu
 BAIDU_ZIP          := $(BAIDU_DIR)/baidu.zip
 BAIDU_BASE_ZIP     := $(BAIDU_DIR)/baidu.deodex.zip
+BAIDU_LAST_ZIP     := $(BAIDU_DIR)/last_baidu.zip
 
 # apktool tags
 # which used to compile multiple projects simultaneously
 APKTOOL_BAIDU_TAG  := baidu_$(PRJ_NAME)
 APKTOOL_VENDOR_TAG := vendor_$(PRJ_NAME)
 APKTOOL_MERGED_TAG := merged_$(PRJ_NAME)
+
+################## baidu bootanimation ####################
+BAIDU_BOOTANIMATION  := $(PORT_ROOT)/build/bootanimations
 
 ######################## vendor ###########################
 VENDOR_DIR := vendor
@@ -118,6 +122,24 @@ MERGE_NONE_TXT   := $(OUT_OBJ_RES)/merge_none.txt
 MERGE_ADD_TXT    := $(OUT_OBJ_RES)/merge_add.txt
 MERGE_UPDATE_TXT := $(OUT_OBJ_RES)/merge_update.txt
 
+IF_BAIDU_RES	:= $(OUT_OBJ_FRAMEWORK)/ifbaidu
+IF_VENDOR_RES	:= $(OUT_OBJ_FRAMEWORK)/ifvendor
+IF_MERGED_RES	:= $(OUT_OBJ_FRAMEWORK)/ifmerged
+
+PREPARE_SOURCE        := $(OUT_OBJ_DIR)/preparesource
+
+OUT_OBJ_AUTOCOM       := $(OUT_OBJ_DIR)/autocom
+AUTOCOM_BAIDU         := $(OUT_OBJ_AUTOCOM)/baidu
+AUTOCOM_PREPARE_BAIDU := $(AUTOCOM_BAIDU)/.preparebaidu
+
+AUTOCOM_VENDOR         := $(OUT_OBJ_AUTOCOM)/vendor
+AUTOCOM_PREPARE_VENDOR := $(AUTOCOM_BAIDU)/.preparevendor
+
+AUTOCOM_MERGED         := $(OUT_OBJ_AUTOCOM)/merged
+AUTOCOM_PREPARE_MERGED := $(AUTOCOM_BAIDU)/.preparemerged
+
+AUTOCOM_PRECONDITION   := $(AUTOCOM_BAIDU)/.autocom_precondition
+
 ################ merged_target_files ######################
 OUT_BOOTABLE_IMAGES  := $(OUT_TARGET_DIR)/BOOTABLE_IMAGES
 OUT_META             := $(OUT_TARGET_DIR)/META
@@ -131,6 +153,10 @@ OUT_SYSTEM_FRAMEWORK := $(OUT_SYSTEM)/framework
 OUT_SYSTEM_LIB       := $(OUT_SYSTEM)/lib
 OUT_SYSTEM_BIN       := $(OUT_SYSTEM)/bin
 OUT_BUILD_PROP       := $(OUT_SYSTEM)/build.prop
+
+################ refernce ######################
+REFERENCE_DIR        := $(PORT_ROOT)/reference
+REFERENCE_BAIDU_BASE := $(REFERENCE_DIR)/baidu_base
 
 ################# target-files zips #######################
 PRJ_OUT_TARGET_ZIP := $(OUT_DIR)/target-files.zip
@@ -252,6 +278,8 @@ NON_MTK_WRITE_RAW_IMAGE	 :=$(PORT_TOOLS)/releasetools/non_mtk_writeRawImage.py
 
 DEX_OPT                  := $(PORT_TOOLS)/dexopt
 DEX_PRE_OPT              := $(PORT_TOOLS)/dex-preopt
+
+SCHECK                   := $(PORT_TOOLS)/smaliparser/SCheck
 
 ################### tools for project ####################
 PRJ_CUSTOM_TARGETFILES := $(PRJ_ROOT)/custom_targetfiles.sh

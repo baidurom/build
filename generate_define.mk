@@ -110,3 +110,11 @@ if [ -f $(2) ]; then \
 fi
 endef
 
+define getMinSdkVersionFromApktoolYml
+if [ -f $(1) ]; then awk '/minSdkVersion:/{print $$NF}' $(1) | grep '[0-9]*' -o; fi
+endef
+
+define getTargetSdkVersionFromApktoolYml
+if [ -f $(1) ]; then awk '/targetSdkVersion:/{print $$NF}' $(1) | grep '[0-9]*' -o; fi
+endef
+

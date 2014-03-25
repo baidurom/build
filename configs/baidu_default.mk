@@ -185,7 +185,8 @@ BAIDU_PREBUILT += \
 	app/BaiduWeather.apk \
 	app/BaiduSoundRecorder.apk \
 	app/BaiduTts.apk \
-	app/BaiduReader.apk \
+	app/CoolReader.apk \
+	app/GameCenter.apk \
 	app/BaiduCamera.apk \
 	app/BaiduTheme.apk \
 	framework/framework-res-yi.apk \
@@ -218,7 +219,8 @@ BAIDU_PRESIGNED_APPS += \
 	app/VoiceAssistant.apk \
 	app/BaiduAppSearch.apk \
 	app/BaiduKeyguard.apk \
-	app/BaiduReader.apk \
+	app/CoolReader.apk \
+	app/GameCenter.apk \
 	app/BaiduOpService.apk
 
 # define the apk and jars which need update the res id
@@ -251,7 +253,8 @@ BAIDU_PREBUILT_LOW_RAM_REMOVE := \
 	app/BaiduClickSearch.apk \
 	app/BaiduVirusKilling.apk \
 	app/Yellowpages.apk \
-	app/BaiduReader.apk \
+	app/CoolReader.apk \
+	app/GameCenter.apk \
 	app/FindmeDM.apk \
 	lib/libacs.so \
 	lib/libbdocr.so
@@ -276,6 +279,13 @@ BAIDU_PREBUILT_PACKAGE_android.policy := \
 BAIDU_PREBUILT_PACKAGE_framework := \
 	com/baidu \
 	baidu
+
+NEED_COMPELETE_MODULE_PAIR := \
+	app/Phone.apk:Phone \
+	framework/android.policy.jar:android.policy.jar.out
+
+VENDOR_COM_MODULE_PAIR := \
+	framework/core.jar:core.jar.out
 
 ifeq ($(filter ro.rom.mt.font=%,$(override_property)),ro.rom.mt.font=1)
 BAIDU_PREBUILT += lib/libskia.so

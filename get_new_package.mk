@@ -73,7 +73,14 @@ prepare-new-source:
 	$(hide) echo ">>> Nothing to do: $@"
 endif
 
-prepare-source: $(BAIDU_BASE_ZIP)
+$(BAIDU_ZIP):
+	@ echo ">>> zip from $(REFERENCE_BAIDU_BASE) to $@"
+	$(hide) rm -rf $(BAIDU_ZIP)
+	$(hide) cd $(REFERENCE_BAIDU_BASE) 2>&1 > /dev/null && zip baidu.zip * -r -q && cd - 2>&1 > /dev/null
+	$(hide) mkdir -p `dirname $@`
+	$(hide) mv $(REFERENCE_BAIDU_BASE)/baidu.zip $@
+
+$(PREPARE_SOURCE): $(BAIDU_BASE_ZIP)
 	$(hide) echo ">>> Prepare baidu sources";
 	$(hide) rm -rf $(CLEAN_SOURCE_REMOVE_TARGETS)
 	$(hide) unzip -q -o $(BAIDU_BASE_ZIP) -d $(BAIDU_DIR);
@@ -90,3 +97,5 @@ prepare-source: $(BAIDU_BASE_ZIP)
 				rm $(OUT_OBJ_BOOT)/boot.img; \
 				echo ">>> prepare-source-boot done"; \
 			fi;
+	$(hide) mkdir -p `dirname $@`
+	$(hide) touch $@

@@ -51,6 +51,17 @@ $(foreach file,$(VENDOR_PREBUILT_FILES),\
 $(foreach file,$(BAIDU_PREBUILT_FILES),\
      $(eval $(call prebuilt_template,$(BAIDU_SYSTEM)/$(file),$(OUT_SYSTEM)/$(file))))
 
+############ bootanimation&shutdownanimation   ###############
+RESOLUTION := $(strip $(RESOLUTION))
+ifneq ($(RESOLUTION),)
+	ifneq ($(wildcard $(BAIDU_BOOTANIMATION)/bootanimation_$(RESOLUTION).zip),)
+        $(eval $(call prebuilt_template,$(BAIDU_BOOTANIMATION)/bootanimation_$(RESOLUTION).zip,$(OUT_SYSTEM)/media/bootanimation.zip))
+	endif
+	ifneq ($(wildcard $(BAIDU_BOOTANIMATION)/shutdownanimation_$(RESOLUTION).zip),)
+        $(eval $(call prebuilt_template,$(BAIDU_BOOTANIMATION)/shutdownanimation_$(RESOLUTION).zip,$(OUT_SYSTEM)/media/shutdownanimation.zip))
+	endif
+endif
+
 ###################### prebuilt ##############################
 OTA_TARGETS += prebuilt
 prebuilt: $(PREBUILT_TARGET)

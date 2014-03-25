@@ -1,64 +1,193 @@
 # autopatch.mk
 #
-# bringup : Patch necessary modifications. With these modifications, the device will boot into laucher successfully.
-# patchall: Patch all the modifications after bringup.
+# bringup : Patch necessary modifications for bringup the ROM.
+# patchall: Patch all the modifications.
+# upgrade:  Patch upgrade patches one by one.
 #
 
 ### Includes Definition
 include $(PORT_BUILD)/locals.mk
 
 ### Constants Definition
-AUTOPATCH_DIR				:= ${PORT_TOOLS}/autopatch
-AUTOPATCH_TOOL				:= ${AUTOPATCH_DIR}/autopatch.py
-UPGRADE_TOOL				:= ${AUTOPATCH_DIR}/upgrade.py
-PORTING_TOOL				:= ${AUTOPATCH_DIR}/porting_from_device.sh
-PREDICATION_TOOL			:= ${AUTOPATCH_DIR}/predication.sh
-FRAMEWORK_PARTITION_TOOL	:= ${AUTOPATCH_DIR}/framework_partition.sh
+AUTOPATCH_DIR   := ${PORT_TOOLS}/autopatch
+PRECONDITION    := ${AUTOPATCH_DIR}/check_precondition.sh
 
-REFERENCE_DIR	:= ${PORT_ROOT}/reference/autopatch
+AUTOPATCH_TOOL  := ${AUTOPATCH_DIR}/autopatch.py
+UPGRADE_TOOL    := ${AUTOPATCH_DIR}/upgrade.py
+PORTING_TOOL    := ${AUTOPATCH_DIR}/porting_from_device.sh
 
-BRING_UP_DIR	:= ${REFERENCE_DIR}/bringup/
-BRING_UP_XML	:= ${BRING_UP_DIR}/bringup.xml
+BRING_UP_XML    := ${PRJ_ROOT}/autopatch/changelist/bringup.xml
+PATCH_ALL_XML   := ${PRJ_ROOT}/autopatch/changelist/patchall.xml
+UPGRADE_DIR     := ${PRJ_ROOT}/autopatch/upgrade/
 
-PATCH_ALL_DIR	:= ${REFERENCE_DIR}/patchall/
-PATCH_ALL_XML	:= ${PATCH_ALL_DIR}/patchall.xml
+AOSP_DIR           := ${PRJ_ROOT}/autopatch/aosp
 
-UPGRADE_DIR		:= ${REFERENCE_DIR}/upgrade/
+AUTOCOM_MERGED_NEED_COM_DIR := $(patsub %,$(AUTOCOM_MERGED_DIR)/%,$(NEED_COMPELETE_MODULE))
 
 ### Variables Definition
 #hide :=
 
 ### Target Definition
-.PHONY: predication bringup patchall upgrade
 
-# Predication of auto patch
-predication:
-	@echo ">>> checking predication for auto patch..."
-	$(hide) $(PREDICATION_TOOL) $(BAIDU_DIR)
-	$(hide) $(FRAMEWORK_PARTITION_TOOL) -combine
+
+### autocomplete_precondition definition
+.PHONY: autocomplete_precondition bringup_autopatch
+
+# Before running this target, all framework-res should be installed.
+# Otherwise, some baksmali error might come out.
+$(eval $(call decode_baidu,baidu/system/app/Phone.apk,/tmp/Phone))
+
+#ifeq ($(strip $(wildcard $(BAIDU_SYSTEM))),)
+#$(AUTOCOM_PREPARE_BAIDU): | preparesource
+#endif
+
+DECODE_TARGET_BAIDU :=
+DECODE_TARGET_VENDOR :=
+DECODE_TARGET_MERGED :=
+NEED_COMPELETE_MODULE :=
+$(foreach pair,$(NEED_COMPELETE_MODULE_PAIR),\
+     $(eval src := $(call word-colon,1,$(pair)))\
+     $(eval dst := $(call word-colon,2,$(pair)))\
+     $(eval NEED_COMPELETE_MODULE += $(dst))\
+     $(eval baidu_src := $(patsubst %,$(BAIDU_SYSTEM)/%,$(strip $(src))))\
+     $(eval baidu_target := $(patsubst %,$(AUTOCOM_BAIDU)/%,$(strip $(dst))))\
+     $(eval $(call decode_baidu,$(baidu_src),$(baidu_target)))\
+     $(eval $(baidu_src): $(PREPARE_SOURCE))\
+     $(eval $(PREPARE_SOURCE): precondition)\
+     $(eval DECODE_TARGET_BAIDU += $(baidu_target)/apktool.yml)\
+     $(eval vendor_src := $(patsubst %,$(VENDOR_SYSTEM)/%,$(strip $(src))))\
+     $(eval vendor_target := $(patsubst %,$(AUTOCOM_VENDOR)/%,$(strip $(dst))))\
+     $(eval $(call decode_vendor,$(vendor_src),$(vendor_target)))\
+     $(eval DECODE_TARGET_VENDOR += $(vendor_target)/apktool.yml))
+
+$(foreach pair,$(VENDOR_COM_MODULE_PAIR),\
+     $(eval src := $(call word-colon,1,$(pair)))\
+     $(eval dst := $(call word-colon,2,$(pair)))\
+     $(eval vendor_src := $(patsubst %,$(VENDOR_SYSTEM)/%,$(strip $(src))))\
+     $(eval vendor_target := $(patsubst %,$(AUTOCOM_MERGED)/%,$(strip $(dst))))\
+     $(eval $(call decode_vendor,$(vendor_src),$(vendor_target)))\
+     $(eval DECODE_TARGET_MERGED += $(vendor_target)/apktool.yml))
+
+.PHONY: autocom_prepare_baidu autocom_prepare_vendor autocom_prepare_merged
+
+autocom_prepare_baidu $(AUTOCOM_PREPARE_BAIDU): $(DECODE_TARGET_BAIDU)
+	$(hide) mkdir -p `dirname $(AUTOCOM_PREPARE_BAIDU)`
+	$(hide) touch $(AUTOCOM_PREPARE_BAIDU)
+
+autocom_prepare_vendor $(AUTOCOM_PREPARE_VENDOR): $(DECODE_TARGET_VENDOR)
+	$(hide) mkdir -p `dirname $(AUTOCOM_PREPARE_VENDOR)`
+	$(hide) touch $(AUTOCOM_PREPARE_VENDOR)
+
+autocom_prepare_merged $(AUTOCOM_PREPARE_MERGED): $(AUTOCOM_PREPARE_VENDOR) $(AUTOCOM_PREPARE_BAIDU) $(DECODE_TARGET_MERGED)
+	$(hide) mkdir -p `dirname $(AUTOCOM_PREPARE_MERGED)`
+	$(hide) $(foreach vModifyJar,$(vendor_modify_jars),cp -rf $(PRJ_ROOT)/$(vModifyJar).jar.out $(AUTOCOM_MERGED);)
+	$(hide) cp -rf $(AUTOCOM_BAIDU)/* $(AUTOCOM_MERGED);
+	$(hide) touch $(AUTOCOM_PREPARE_MERGED)
+
+autocomplete_precondition $(AUTOCOM_PRECONDITION): $(AUTOCOM_PREPARE_BAIDU) $(AUTOCOM_PREPARE_VENDOR) $(AUTOCOM_PREPARE_MERGED)
+	@echo ">>> checking precondition for autocomplete missed methods ..."
+	$(hide) rm -rf $(AUTOCOM_PRECONDITION)
+	$(hide) $(SCHECK) --autocomplete \
+				$(AUTOCOM_VENDOR) \
+				$(AOSP_DIR) \
+				$(AUTOCOM_BAIDU) \
+				$(AUTOCOM_MERGED) \
+				$(PRJ_ROOT) \
+				$(NEED_COMPELETE_MODULE)
+	$(hide) touch $(AUTOCOM_PRECONDITION)
+	@echo "<<< checking precondition for autocomplete missed methods Done."
+
+### bringup patchall definition
+.PHONY: precondition bringup patchall
+
+$(AUTOCOM_PRECONDITION): | precondition
+
+# check precondition of auto patch
+precondition: $(PREPARE_SOURCE)
+	@echo ">>> checking precondition for auto patch ..."
+	$(hide) $(PRECONDITION) $(PRJ_ROOT)
+	@echo "<<< checking precondition Done."
 
 # Patch the bringup modifications
-bringup: predication
-	@echo ">>> bringup..."
-	$(hide) $(AUTOPATCH_TOOL) $(BRING_UP_DIR) $(BRING_UP_XML)
-	$(hide) $(FRAMEWORK_PARTITION_TOOL) -revert
+modify_boot := $(filter boot,$(strip $(vendor_modify_images)))
+ifeq ($(modify_boot),)
+REVISE_OPTION := False
+else
+REVISE_OPTION := True
+endif
+
+bringup: $(AUTOCOM_PRECONDITION)
+	@echo ""
+	@echo ">>> bringup ..."
+	$(hide) $(AUTOPATCH_TOOL) $(BRING_UP_XML) $(REVISE_OPTION)
 
 # Patch all the baidu features after bringup
-patchall: predication
-	@echo ">>> patchall..."
-	$(hide) $(AUTOPATCH_TOOL) $(PATCH_ALL_DIR) $(PATCH_ALL_XML)
-	$(hide) $(FRAMEWORK_PARTITION_TOOL) -revert
+patchall: precondition
+	@echo ""
+	@echo ">>> patchall ..."
+	$(hide) $(AUTOPATCH_TOOL) $(PATCH_ALL_XML)
 
-# Upgrade version
-upgrade: predication
+
+
+### upgrade definition
+.PHONY: upgrade_precondition upgrade
+
+UPGRADE_USAGE="\n  Usage: make upgrade FROM=XX [TO=XX]                                  " \
+	      "\n                                                                       " \
+              "\n    - FROM current version of ROM.                                     " \
+	      "\n                                                                       " \
+              "\n    - TO   ROM version that upgrade to. Default to the lastest version." \
+	      "\n                                                                       " \
+              "\n    e.g. make upgrade FROM=44                                          " \
+	      "\n         Upgrade your ROM from ROM44 to the latest                     " \
+              "\n                                                                       " \
+              "\n    e.g. make upgrade FROM=44 TO=45                                    " \
+	      "\n         Upgrade your ROM from ROM44 to ROM45                          " \
+              "\n                                                                       " \
+              "\n   Skill: Define FROM or TO in your Makefile, next time you could      " \
+              "\n          use [make upgrade] directly, it is more effective.           " \
+              "\n                                                                       " \
+
+# check precondition of upgrade
+upgrade_precondition:
+	$(hide) if [ -z $(FROM) ]; then echo $(UPGRADE_USAGE); exit 1; fi
+	@echo ">>> sync patches to latest ..."
+	repo sync ${PORT_TOOLS}
+	repo sync ${PORT_ROOT}/reference
+	@echo ">>> checking precondition for upgrade ..."
+	$(hide) $(PRECONDITION) --upgrade $(PRJ_ROOT)
+	@echo "<<< checking precondition for upgrade Done."
+
+upgrade: upgrade_precondition
+	@echo ""
 	@echo ">>> upgrade ..."
-	$(hide) $(UPGRADE_TOOL) $(UPGRADE_DIR) $(ROM_VERSION) $(UPGRADE_VERSION)
-	$(hide) $(FRAMEWORK_PARTITION_TOOL) -revert
+	$(hide) $(UPGRADE_TOOL) $(FROM) $(TO)
 
-### Target Definition
+
+### porting definition
 .PHONY: porting
+
+PORTING_USAGE="\n  Usage: make porting MASTER=XX [NUM=XX]                               " \
+              "\n                                                                       " \
+              "\n  - MASTER the source device you porting from, it is like a master     " \
+              "\n                                                                       " \
+              "\n  - NUM    the number of latest commits you would like to pick         " \
+              "\n           if not present, an interactive UI will show for you         " \
+              "\n                                                                       " \
+              "\n    e.g. porting_from_device.sh MASTER=demo                            " \
+              "\n         Porting commits from demo interactively                       " \
+              "\n                                                                       " \
+              "\n    e.g. porting_from_device.sh MASTER=demo NUM=3                      " \
+              "\n         Porting the latest 3 commits from maguro quietly.             " \
+              "\n                                                                       " \
+              "\n   Skill: Define MASTER or NUM in your Makefile, next time you could   " \
+              "\n          use [make porting] directly, it is more effective.           " \
+              "\n                                                                       " \
 
 # Porting commits from reference device
 porting:
-	@echo ">>> Porting commits from device ${PORTING_FROM_DEVICE}..."
-	$(hide) $(PORTING_TOOL) ${PORTING_FROM_DEVICE} ${PORTING_FROM_BRANCH}
+	@echo ">>> Porting commits from device ${MASTER} ..."
+	$(hide) if [ -z $(MASTER) ]; then echo $(PORTING_USAGE); exit 1; fi
+	$(hide) $(PORTING_TOOL) ${MASTER} ${NUM}
+
+
