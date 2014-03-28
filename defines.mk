@@ -286,6 +286,7 @@ define baidu_modify_apk_build
 SIGN_APPS += $(OUT_OBJ_SYSTEM)/$(2):$(OUT_SYSTEM)/$(2)
 $(call getBaseName, $(2))_bm_apk_sources := $(sort $(call get_all_smali_files_in_dir, $(1)))
 
+$(BAIDU_SYSTEM)/$(2): $(PREPARE_SOURCE)
 $(OUT_OBJ_SYSTEM)/$(2): apkBaseName   := $(call getBaseName, $(2))
 $(OUT_OBJ_SYSTEM)/$(2): needUpdateRes := $(shell echo $(BAIDU_UPDATE_RES_APPS) | grep "$(2)" -o)
 $(OUT_OBJ_SYSTEM)/$(2): tempSmaliDir  := $(shell mktemp -u $(OUT_OBJ_APP)/$(call getBaseName, $(2)).XXX)
@@ -379,6 +380,7 @@ endef
 # used to build baidu_modify_jars
 define baidu_modify_jar_build
 SIGN_JARS += $(OUT_OBJ_SYSTEM)/$(2):$(OUT_SYSTEM)/$(2)
+$(BAIDU_SYSTEM)/$(2): $(PREPARE_SOURCE)
 $(call getBaseName, $(2))_bm_jar_sources := $(sort $(call get_all_smali_files_in_dir, $(1)))
 $(OUT_OBJ_SYSTEM)/$(2): jarBaseName  := $(call getBaseName, $(2))
 $(OUT_OBJ_SYSTEM)/$(2): tempSmaliDir := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/$(call getBaseName, $(2)).XXX)

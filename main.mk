@@ -154,6 +154,8 @@ FRAMEWORK_APKS_TARGETS := $(patsubst %,$(OUT_SYSTEM)/%,\
         $(ALL_VENDOR_FILES)))))
 
 IF_ALL_RES		:= $(IF_BAIDU_RES) $(IF_VENDOR_RES) $(IF_MERGED_RES)
+$(BAIDU_FRAMEWORK_APKS): $(PREPARE_SOURCE)
+
 $(IF_BAIDU_RES): $(BAIDU_FRAMEWORK_APKS) $(PREPARE_SOURCE)
 	$(hide) $(call apktool_if_baidu,$(BAIDU_FRAMEWORK))
 	$(hide) echo ">>> apktool if baidu framework res done"
