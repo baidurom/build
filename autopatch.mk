@@ -48,17 +48,18 @@ NEED_COMPELETE_MODULE :=
 $(foreach pair,$(NEED_COMPELETE_MODULE_PAIR),\
      $(eval src := $(call word-colon,1,$(pair)))\
      $(eval dst := $(call word-colon,2,$(pair)))\
-     $(eval NEED_COMPELETE_MODULE += $(dst))\
      $(eval baidu_src := $(patsubst %,$(BAIDU_SYSTEM)/%,$(strip $(src))))\
      $(eval baidu_target := $(patsubst %,$(AUTOCOM_BAIDU)/%,$(strip $(dst))))\
      $(eval $(call decode_baidu,$(baidu_src),$(baidu_target)))\
      $(eval $(baidu_src): $(PREPARE_SOURCE))\
-     $(eval $(PREPARE_SOURCE): precondition)\
      $(eval DECODE_TARGET_BAIDU += $(baidu_target)/apktool.yml)\
      $(eval vendor_src := $(patsubst %,$(VENDOR_SYSTEM)/%,$(strip $(src))))\
      $(eval vendor_target := $(patsubst %,$(AUTOCOM_VENDOR)/%,$(strip $(dst))))\
-     $(eval $(call decode_vendor,$(vendor_src),$(vendor_target)))\
-     $(eval DECODE_TARGET_VENDOR += $(vendor_target)/apktool.yml))
+     $(if $(wildcard $(vendor_src)),\
+          $(eval NEED_COMPELETE_MODULE += $(dst))\
+          $(eval $(call decode_vendor,$(vendor_src),$(vendor_target)))\
+          $(eval DECODE_TARGET_VENDOR += $(vendor_target)/apktool.yml)))
+
 
 $(foreach pair,$(VENDOR_COM_MODULE_PAIR),\
      $(eval src := $(call word-colon,1,$(pair)))\
@@ -152,8 +153,8 @@ UPGRADE_USAGE="\n  Usage: make upgrade FROM=XX [TO=XX]                          
 upgrade_precondition:
 	$(hide) if [ -z $(FROM) ]; then echo $(UPGRADE_USAGE); exit 1; fi
 	@echo ">>> sync patches to latest ..."
-	repo sync ${PORT_TOOLS}
-	repo sync ${PORT_ROOT}/reference
+	repo sync --no-clone-bundle --no-tags -j4 ${PORT_TOOLS}
+	repo sync --no-clone-bundle --no-tags -j4 ${PORT_ROOT}/reference
 	@echo ">>> checking precondition for upgrade ..."
 	$(hide) $(PRECONDITION) --upgrade $(PRJ_ROOT)
 	@echo "<<< checking precondition for upgrade Done."
