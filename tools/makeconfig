@@ -16,6 +16,8 @@ VENDOR_MODIFY_JARS_SUGGEST="framework|HTCExtension|services|telephony-common"
 VENDOR_SAVED_APPS_SUGGEST="MtkBt|FMTransmitter|FMRadio|Bluetooth|FmRadio"
 
 GET_RESOLUTION_BIN=$PORT_ROOT/build/tools/getresolution
+GIT_IGNORE_CONFIG=$PORT_ROOT/reference/configs/makeconfig/gitignore.template
+PRJ_GIT_IGNORE=$PWD/.gitignore
 
 DENSITY=""
 RESOLUTION=""
@@ -273,6 +275,14 @@ function setupMakefile()
 	fi
 }
 
+############ init gitignore ###########
+function initGitIgnore()
+{
+    if [ -f $GIT_IGNORE_CONFIG ] && [ ! -f $PRJ_GIT_IGNORE ]; then
+        cp $GIT_IGNORE_CONFIG $PRJ_GIT_IGNORE
+    fi
+}
+
 ############  make new project ###############
 
 # start a new project
@@ -291,6 +301,7 @@ function newMakefile()
 
 	LOGD "begin start a new project!"
 	setupMakefile
+	initGitIgnore
 
 	if [ $? == "0" ];then
 		LOGD "make config success!"
