@@ -82,6 +82,9 @@ class UpdateFilesystem:
 		filetmpdir = os.path.dirname(filetmp)
 		pptmp = False
 		for i in range(len(self.filelist)):
+            splitArray = self.filelist[i].split(' ', 1)
+            if len(splitArray) < 2:
+                continue
 		    filep = self.filelist[i].split(' ', 1)[0]
 		    filepr =  self.filelist[i].split(' ', 1)[1]
 		    pptmp = self.strcmp(filetmpdir, filep)
