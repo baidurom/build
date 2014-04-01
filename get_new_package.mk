@@ -62,7 +62,7 @@ prepare-new-source: clean get-new-package
 	$(hide) if [ -f $(BAIDU_DIR)/boot.img -a ! -d $(BAIDU_DIR)/BOOT ];then \
 				echo ">>> unpack source/boot.img to source/BOOT"; \
 				$(UNPACK_BOOT_PY) $(BAIDU_DIR)/boot.img $(BAIDU_DIR)/BOOT; \
-				rm $(OUT_OBJ_BOOT)/boot.img; \
+				rm -rf $(OUT_OBJ_BOOT)/boot.img; \
 				echo ">>> prepare-source-boot done"; \
 			fi;
 else
