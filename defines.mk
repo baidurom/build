@@ -380,7 +380,9 @@ endef
 # used to build baidu_modify_jars
 define baidu_modify_jar_build
 SIGN_JARS += $(OUT_OBJ_SYSTEM)/$(2):$(OUT_SYSTEM)/$(2)
+
 $(BAIDU_SYSTEM)/$(2): $(PREPARE_SOURCE)
+
 $(call getBaseName, $(2))_bm_jar_sources := $(sort $(call get_all_smali_files_in_dir, $(1)))
 $(OUT_OBJ_SYSTEM)/$(2): jarBaseName  := $(call getBaseName, $(2))
 $(OUT_OBJ_SYSTEM)/$(2): tempSmaliDir := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/$(call getBaseName, $(2)).XXX)

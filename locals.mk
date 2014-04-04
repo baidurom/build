@@ -192,6 +192,7 @@ PRJ_DATA_PREBUILT_DIR     := $(PRJ_OVERLAY)/data
 PRODUCT_DIR            := odexupdate
 SYSDIR                 := system
 BOOTDIR                := $(SYSDIR)/framework
+
 VENDOR_INIT_RC         := $(VENDOR_DIR)/BOOT/RAMDISK/init.rc
 
 # do not change the order in DEFAULT_BOOT_CLASS_ODEX_ORDER

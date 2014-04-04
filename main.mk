@@ -392,9 +392,7 @@ OTA $(OUT_OTA): $(strip $(call get_all_files_in_dir,$(VENDOR_OTA))) $(strip $(ca
 OTA_TARGETS += recover_link
 recover_link: target-files-system $(OUT_SYSTEM)
 	$(hide) echo ">>> begin recover the link files in system";
-	$(hide) cp $(VENDOR_META)/linkinfo.txt $(OUT_SYSTEM);
-	$(hide) $(RECOVER_LINK) $(OUT_TARGET_DIR);
-	$(hide) rm -rf $(OUT_SYSTEM)/linkinfo.txt;
+	$(hide) $(RECOVER_LINK) $(VENDOR_META)/linkinfo.txt $(OUT_TARGET_DIR);
 	$(hide) echo ">>> recover the link files done"
 
 ################# update the apk certs #################

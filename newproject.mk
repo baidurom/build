@@ -34,7 +34,6 @@ prepare-vendor: $(OEM_TARGET_DEODEX_ZIP)
 	$(hide) if [ -d $(VENDOR_DIR)/SYSTEM ];then \
 				mv $(VENDOR_DIR)/SYSTEM $(VENDOR_DIR)/system; \
 			fi
-	$(hide) cp $(OEM_TARGET_DEODEX_ZIP) $(VENDOR_DIR)/vendor.zip
 	$(hide) echo ">>> prepare-vendor done"
 
 ifeq ($(PRJ_RECOVERY_FSTAB),$(wildcard $(PRJ_RECOVERY_FSTAB)))

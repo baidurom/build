@@ -157,6 +157,10 @@ function name2num()
 	$PORT_ROOT/tools/accessmethod/name2num.py $@
 }
 
+function updatebaidubase()
+{
+	$PORT_ROOT/tools/autopatch/baidu_base.sh $PORT_ROOT/baidu_base.zip
+}
 setupCdFunction
 
 if [ -f $PORT_BUILD/Makefile ]; then
