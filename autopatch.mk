@@ -30,8 +30,8 @@ AUTOCOM_MERGED_NEED_COM_DIR := $(patsub %,$(AUTOCOM_MERGED_DIR)/%,$(NEED_COMPELE
 ### Target Definition
 
 
-### autocomplete_precondition definition
-.PHONY: autocomplete_precondition bringup_autopatch
+### autocom definition
+.PHONY: autocom bringup_autopatch
 
 # Before running this target, all framework-res should be installed.
 # Otherwise, some baksmali error might come out.
@@ -85,7 +85,7 @@ autocom_prepare_merged $(AUTOCOM_PREPARE_MERGED): $(AUTOCOM_PREPARE_VENDOR) $(AU
 	$(hide) cp -rf $(AUTOCOM_BAIDU)/* $(AUTOCOM_MERGED);
 	$(hide) touch $(AUTOCOM_PREPARE_MERGED)
 
-autocomplete_precondition $(AUTOCOM_PRECONDITION): $(AUTOCOM_PREPARE_BAIDU) $(AUTOCOM_PREPARE_VENDOR) $(AUTOCOM_PREPARE_MERGED)
+autocom $(AUTOCOM_PRECONDITION): $(AUTOCOM_PREPARE_BAIDU) $(AUTOCOM_PREPARE_VENDOR) $(AUTOCOM_PREPARE_MERGED)
 	@echo ">>> checking precondition for autocomplete missed methods ..."
 	$(hide) rm -rf $(AUTOCOM_PRECONDITION)
 	$(hide) $(SCHECK) --autocomplete \
