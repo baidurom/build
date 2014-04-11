@@ -15,23 +15,31 @@ if [ ! -d $DST_SMALI_DIR ];then
 fi;
 
 
-for file in `find $PART_SMALI_DIR -name "*.part"`
+for file in `find $PART_SMALI_DIR -type f -name "*.smali*"`
 do
 	FILEPATH=${file##*/smali/};
 	PARTFILE=$PART_SMALI_DIR/$FILEPATH;
 	DSTFILE=$DST_SMALI_DIR/${FILEPATH%.part};
 
-	FUNCS=$(cat $PARTFILE | grep "^.method")
-	echo "$FUNCS" | while read func
-	do
-		functmp=$(echo "$func" | sed 's/\//\\\//g;s/\[/\\\[/g')
-		TMP=$(sed -n "/$functmp/p" $DSTFILE)
-		if [ x"$TMP" != x"" ];then
-			echo ">>> remove $func from $DSTFILE"
-			sed -i "/^$functmp/,/^.end method/d" $DSTFILE
+	if [ -f $DSTFILE ]; then
+		FUNCS=$(cat $PARTFILE | grep "^.method")
+		echo "$FUNCS" | while read func
+		do
+			functmp=$(echo "$func" | sed 's/\//\\\//g;s/\[/\\\[/g')
+			TMP=$(sed -n "/$functmp/p" $DSTFILE)
+			if [ x"$TMP" != x"" ];then
+				echo ">>> remove $func from $DSTFILE"
+				sed -i "/^$functmp/,/^.end method/d" $DSTFILE
+			fi
+		done
+	else
+		DSTDIR=`dirname $DSTFILE`
+		if [ ! -d $DSTDIR ]; then
+			mkdir -p $DSTDIR
 		fi
-	done
+	fi
 
+    echo "cat $PARTFILE >> $DSTFILE"
 	cat $PARTFILE >> $DSTFILE
 	echo ">>> append $PARTFILE"
 	echo "        to $DSTFILE"
