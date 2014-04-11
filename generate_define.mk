@@ -86,6 +86,8 @@ $(call getBaseName, $(2)).phone: baseName := $(notdir $(2))
 $(call getBaseName, $(2)).phone: $(2)
 	$(hide) echo ">>> push $(2) to Phone"
 	adb root
+	@ echo "wait for devices..."
+	adb wait-for-device
 	adb remount
 	adb push $$< /system/$$(baseDir)
 	adb shell chmod 644 /system/$$(baseDir)/$$(baseName)
