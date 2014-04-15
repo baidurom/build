@@ -60,6 +60,10 @@ function genmap()
 	dummyfilter $mergenone;
 	dummyfilter $mergeadd;
 
+	rm -f $4/merge_update.txt
+	rm -f $4/merge_none.txt
+	rm -f $4/merge_add.txt
+
 	cp $mergeout $4/merge_update.txt
 	cp $mergenone $4/merge_none.txt
 	cp $mergeadd $4/merge_add.txt

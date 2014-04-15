@@ -36,7 +36,7 @@ PROPERTY_OVERRIDES := \
 PROPERTY_OVERRIDES := \
      $(call uniq-pairs-by-first-component,$(PROPERTY_OVERRIDES),=)
 
-$(OUT_OBJ_SYSTEM)/baidu.build.prop:
+$(OUT_OBJ_SYSTEM)/baidu.build.prop: $(BAIDU_SYSTEM)/build.prop
 	$(hide) mkdir -p $(OUT_OBJ_SYSTEM)
 	$(hide) $(foreach line,$(PROPERTY_OVERRIDES), \
 			echo ">>> overries property: `echo $(line) | sed 's/$(sub_space)/ /g'`"; \

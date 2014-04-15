@@ -66,13 +66,6 @@ BAIDU_PREBUILT += \
 	etc/localTheme01.btp \
 	etc/localTheme02.btp \
 	etc/security/otacerts.zip \
-	media/audio/alarms/HarvestSeasonAlarm.ogg \
-	media/audio/alarms/KusoAlarm.ogg \
-	media/audio/alarms/RingingAlarm.ogg \
-	media/audio/alarms/TinkingAlarm.ogg \
-	media/audio/ui/Effect_Tick.ogg \
-	media/audio/ui/Unlock.ogg \
-	media/audio/ui/camera_focus.ogg \
 	bin/http2wormhole \
 	bin/property_stop.sh \
 	bin/property_start.sh \
@@ -84,9 +77,9 @@ BAIDU_PREBUILT += \
 
 # the directory which need copy to target
 BAIDU_PREBUILT_DIRS += \
-	media/audio/ringtones \
-	media/audio/notifications \
+	media/audio \
 	etc/localTheme01 \
+	etc/channel_files \
 	etc/defaultTheme
 
 #for SearchBox 

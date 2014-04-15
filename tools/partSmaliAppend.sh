@@ -15,7 +15,7 @@ if [ ! -d $DST_SMALI_DIR ];then
 fi;
 
 
-for file in `find $PART_SMALI_DIR -type f -name "*.smali*"`
+for file in `find $PART_SMALI_DIR -type f -name "*.part"`
 do
 	FILEPATH=${file##*/smali/};
 	PARTFILE=$PART_SMALI_DIR/$FILEPATH;
@@ -39,8 +39,23 @@ do
 		fi
 	fi
 
-    echo "cat $PARTFILE >> $DSTFILE"
+	echo "cat $PARTFILE >> $DSTFILE"
 	cat $PARTFILE >> $DSTFILE
 	echo ">>> append $PARTFILE"
 	echo "        to $DSTFILE"
+done;
+
+for file in `find $PART_SMALI_DIR -type f -name "*.smali"`
+do
+	FILEPATH=${file##*/smali/};
+	PARTFILE=$PART_SMALI_DIR/$FILEPATH;
+	DSTFILE=$DST_SMALI_DIR/$FILEPATH
+	DSTDIR=`dirname $DSTFILE`
+
+	if [ ! -d $DSTDIR ]; then
+		mkdir -p $DSTDIR
+	fi
+
+	cp $file $DSTFILE
+	echo "cp $PARTFILE to $DSTFILE"
 done;

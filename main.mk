@@ -572,6 +572,10 @@ ifneq ($(wildcard $(PORT_BUILD)/sign_ota.mk),)
 include $(PORT_BUILD)/sign_ota.mk
 endif
 
+############## add prepare_source ######################
+$(BAIDU_SYSTEM)/%: $(PREPARE_SOURCE)
+	@echo ">>> prepare $@ done"
+
 ################### clean ##############################
 .PHONY: clean
 clean: $(CLEAN_TARGETS) 

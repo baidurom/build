@@ -126,8 +126,6 @@ IF_BAIDU_RES	:= $(OUT_OBJ_FRAMEWORK)/ifbaidu
 IF_VENDOR_RES	:= $(OUT_OBJ_FRAMEWORK)/ifvendor
 IF_MERGED_RES	:= $(OUT_OBJ_FRAMEWORK)/ifmerged
 
-PREPARE_SOURCE        := $(OUT_OBJ_DIR)/preparesource
-
 OUT_OBJ_AUTOCOM       := $(OUT_OBJ_DIR)/autocom
 AUTOCOM_BAIDU         := $(OUT_OBJ_AUTOCOM)/baidu
 AUTOCOM_PREPARE_BAIDU := $(AUTOCOM_BAIDU)/.preparebaidu
@@ -176,6 +174,8 @@ BAIDU_OTA           := $(BAIDU_DIR)/OTA
 
 BAIDU_FRAMEWORK     := $(BAIDU_SYSTEM)/framework
 BAIDU_FRAMEWORK_RES := $(BAIDU_FRAMEWORK)/framework-res.apk
+
+PREPARE_SOURCE      := $(BAIDU_SYSTEM)/.preparesource
 
 ############## vendor framework-res smali dir #############
 VENDOR_FRAMEWORK_RES_OUT := $(PRJ_ROOT)/framework-res
