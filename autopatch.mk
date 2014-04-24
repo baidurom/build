@@ -16,8 +16,8 @@ AUTOPATCH_TOOL  := ${AUTOPATCH_DIR}/autopatch.py
 UPGRADE_TOOL    := ${AUTOPATCH_DIR}/upgrade.py
 PORTING_TOOL    := ${AUTOPATCH_DIR}/porting_from_device.sh
 
-BRING_UP_XML    := ${PRJ_ROOT}/autopatch/changelist/bringup.xml
 PATCH_ALL_XML   := ${PRJ_ROOT}/autopatch/changelist/patchall.xml
+PATCH_ONE_XML   := ${PRJ_ROOT}/autopatch/changelist/patchone.xml
 UPGRADE_DIR     := ${PRJ_ROOT}/autopatch/upgrade/
 
 AOSP_DIR           := ${PRJ_ROOT}/autopatch/aosp
@@ -98,8 +98,14 @@ autocom $(AUTOCOM_PRECONDITION): $(AUTOCOM_PREPARE_BAIDU) $(AUTOCOM_PREPARE_VEND
 	$(hide) touch $(AUTOCOM_PRECONDITION)
 	@echo "<<< checking precondition for autocomplete missed methods Done."
 
+
+bringup:
+	@echo ""
+	@echo "  bringup is obsoleted, use patchall directly!!"
+	@echo ""
+
 ### bringup patchall definition
-.PHONY: precondition bringup patchall
+.PHONY: precondition patchall
 
 $(AUTOCOM_PRECONDITION): | precondition
 
@@ -117,18 +123,16 @@ else
 REVISE_OPTION := True
 endif
 
-bringup: $(AUTOCOM_PRECONDITION)
+patchall: $(AUTOCOM_PRECONDITION)
 	@echo ""
-	@echo ">>> bringup ..."
-	$(hide) $(AUTOPATCH_TOOL) $(BRING_UP_XML) $(REVISE_OPTION)
+	@echo ">>> auto patch all ..."
+	$(hide) $(AUTOPATCH_TOOL) $(PATCH_ALL_XML) $(REVISE_OPTION)
 
-# Patch all the baidu features after bringup
-patchall: precondition
+
+patchone: $(AUTOCOM_PRECONDITION)
 	@echo ""
-	@echo ">>> patchall ..."
-	$(hide) $(AUTOPATCH_TOOL) $(PATCH_ALL_XML)
-
-
+	@echo ">>> auto patch one ..."
+	$(hide) $(AUTOPATCH_TOOL) $(PATCH_ONE_XML)
 
 ### upgrade definition
 .PHONY: upgrade_precondition upgrade
@@ -153,8 +157,8 @@ UPGRADE_USAGE="\n  Usage: make upgrade FROM=XX [TO=XX]                          
 upgrade_precondition:
 	$(hide) if [ -z $(FROM) ]; then echo $(UPGRADE_USAGE); exit 1; fi
 	@echo ">>> sync patches to latest ..."
-	repo sync --no-clone-bundle --no-tags -j4 ${PORT_TOOLS}
-	repo sync --no-clone-bundle --no-tags -j4 ${PORT_ROOT}/reference
+	repo sync -c --no-clone-bundle --no-tags -j4 ${PORT_TOOLS}
+	repo sync -c --no-clone-bundle --no-tags -j4 ${PORT_ROOT}/reference
 	@echo ">>> checking precondition for upgrade ..."
 	$(hide) $(PRECONDITION) --upgrade $(PRJ_ROOT)
 	@echo "<<< checking precondition for upgrade Done."

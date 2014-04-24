@@ -85,6 +85,11 @@ $(OUT_BOOT_IMG): prepare_boot_ramdisk
 	$(hide) echo ">>> Target Out ==> $@, $(OUT_DIR)/$(BOOT_IMG)"
 endif
 
+.PHONY: clean-bootimage
+clean-bootimage:
+	$(hide) rm -rf $(OUT_OBJ_BOOT) $(OUT_BOOT_IMG) $(OUT_DIR)/$(BOOT_IMG)
+	$(hide) echo ">>> clean-bootimage done"
+
 ######################## recovery #############################
 RECOVERY_IMG            := recovery.img
 PRJ_RECOVERY_IMG        := $(PRJ_ROOT)/$(RECOVERY_IMG)
@@ -155,6 +160,7 @@ $(OUT_RECOVERY_IMG): prepare_recovery_ramdisk
 				done; \
 				cat $(VENDOR_RECOVERY_DEFAULT_PROP) >> $(OUT_OBJ_RECOVERY_DEFAULT_PROP); \
 			fi
+	$(hide) mkdir -p `dirname $@`
 	$(hide) $(PACK_BOOT_PY) $(OUT_OBJ_RECOVERY) $@
 	$(hide) cp $@ $(OUT_DIR)/$(RECOVERY_IMG)
 	$(hide) echo ">>> Target Out ==> $@, $(OUT_DIR)/$(RECOVERY_IMG)"
@@ -163,5 +169,11 @@ endif
 $(OUT_RECOVERY_FSTAB): $(VENDOR_RECOVERY_FSTAB)
 	$(hide) $(call file_copy,$(VENDOR_RECOVERY_FSTAB),$(OUT_RECOVERY_FSTAB))
 	$(hide) echo ">>> Target Out ==> $@"
+
+.PHONY: clean-recoveryimage
+clean-recoveryimage:
+	$(hide) rm -rf $(OUT_OBJ_RECOVERY) $(OUT_RECOVERY) $(OUT_RECOVERY_IMG) $(OUT_DIR)/$(RECOVERY_IMG)
+	$(hide) echo ">>> clean-recoveryimage done"
+
 ##############################################################
 

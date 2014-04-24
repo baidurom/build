@@ -118,22 +118,6 @@ override_property += \
 remove_property += \
     dev.defaultwallpaper
 
-################### Auto Patch Constants Definition #########################
-# Current ROM version and the new version to be ugraded.
-# These two are useful for ROM upgrading.
-# When UPGRADE_VERSION is none, means to upgrade to the newest version.
-#-----------------------------------------------------------------------------
-# ROM_VERSION := ROM37
-# UPGRADE_VERSION := ROM38
-
-##############################################################################
-# Porting commits from a reference device automatically.
-# These two are useful for ROM porting.
-#-----------------------------------------------------------------------------
-# PORTING_FROM_DEVICE := maguro
-# PORTING_FROM_BRANCH := coron-4.2
-
-################### Auto Patch Constants Definition #########################
 
 include $(PORT_BUILD)/main.mk
 include $(PORT_BUILD)/autopatch.mk

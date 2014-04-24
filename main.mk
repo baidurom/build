@@ -84,6 +84,11 @@ clean-baidu-zip:
 	$(hide) echo ">>> remove $(BAIDU_DIR)";
 	$(hide) rm -rf $(BAIDU_DIR);
 
+.PHONY: clean-autopatch
+clean-autopatch:
+	$(hide) echo ">>> remove $(PRJ_ROOT)/autopatch";
+	$(hide) rm -rf $(PRJ_ROOT)/autopatch;
+
 ################### boot recovery ######################
 ifeq ($(PRJ_ROOT)/boot_recovery.mk,$(wildcard $(PRJ_ROOT)/boot_recovery.mk))
     $(info # use project boot_recovery.mk)
@@ -582,6 +587,6 @@ clean: $(CLEAN_TARGETS)
 	$(hide) echo ">>> clean done"
 
 .PHONY: clean-all
-clean-all: clean clean-baidu-zip
+clean-all: clean clean-baidu-zip clean-autopatch
 
 $(info # ------------------------------------------------------------------)
