@@ -150,7 +150,6 @@ BAIDU_PREBUILT += \
 	app/CertInstaller.apk \
 	app/DrmProvider.apk \
 	app/NewPhoneWizard.apk \
-	app/PackageInstaller.apk \
 	app/ContactsProvider.apk \
 	app/InternalEngineerMode.apk \
 	app/CDS_INFO.apk \
@@ -236,6 +235,7 @@ BAIDU_UPDATE_RES_APPS += \
 	app/BaiduDualCardSetting.apk \
 	app/Calendar.apk \
 	app/SceneMode.apk \
+	app/PackageInstaller.apk \
 	framework/android.policy.jar
 
 BAIDU_PROPERTY_OVERRIDES := \
