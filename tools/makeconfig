@@ -42,6 +42,29 @@ function LOGW()
 }
 
 ################## adb ######################
+
+# wait for the device to be online or timeout
+function wait_for_device_online ()
+{
+	echo ">>> Wait for the device to be online..."
+
+	local timeout=30
+	while [ $timeout -gt 0 ]
+	do
+		if adb shell ls > /dev/null; then
+			echo ">>> device is online"
+			break
+		fi
+		echo ">>> device is not online, wait .."
+		sleep 3
+		timeout=$[$timeout - 3]
+	done
+	if [ $timeout -eq 0 ];then
+		echo ">>> Please ensure adb can find your device and then rerun this script."
+		exit 1
+	fi
+}
+
 function isSuOk()
 {
 	adb shell "su -c \"\""
@@ -56,33 +79,16 @@ function isAdbOk()
 
 function isAdbRoot()
 {
-	local adbResult="/tmp/$$.adbResult"
-
-	cat /dev/null > $adbResult
-	{
-		LOGD "Check can use adb root..."
-		rootResult=$($ADB root)
-		rootReturn=$?
-
-		LOGD "rootResult: $rootResult, rootReturn:$rootReturn"
-
-		if [ "$rootReturn" == "0" ];then
-			if [ "x$(echo $rootResult | grep 'not' -so)" != "xnot" ];then
-				LOGD "adb root success"
-				echo "0" > $adbResult
-			fi
-		fi
-		exit
-	} &
-
-	sleep 5
-	if [ "$(cat $adbResult)" == "0" ];then
-		rm $adbResult
-		LOGD "can use adb root now"
-		return 0
-	else
-		rm $adbResult
+	echo "==========================="
+	SECURE_PROP=$(adb shell cat /default.prop | grep -o "ro.secure=\w")
+	DEBUG_PROP=$(adb shell cat /default.prop | grep -o "ro.debuggable=\w")
+	if [ "$SECURE_PROP" = "ro.secure=0" -o "$DEBUG_PROP" = "ro.debuggable=1" ];then
+		LOGD "can use adb root now, run adb root"
+		adb root
+		wait_for_device_online
 		return 1
+	else
+		return 0
 	fi
 }
 
