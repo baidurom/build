@@ -2,6 +2,7 @@
 
 BAIDU_PREBUILT += \
 	app/BaiduBrowser.apk \
+	app/BaiduDirectShare.apk \
 	app/BaiduInput.apk \
 	app/BaiduMap.apk \
 	app/BaiduNetworkLocation.apk \
@@ -66,6 +67,8 @@ BAIDU_PREBUILT += \
 	etc/defaultTheme.btp \
 	etc/localTheme01.btp \
 	etc/localTheme02.btp \
+	etc/water.btp \
+	etc/female.btp \
 	etc/security/otacerts.zip \
 	bin/http2wormhole \
 	bin/property_stop.sh \
@@ -81,7 +84,9 @@ BAIDU_PREBUILT_DIRS += \
 	media/audio \
 	etc/localTheme01 \
 	etc/channel_files \
-	etc/defaultTheme
+	etc/defaultTheme \
+	etc/water \
+	etc/female
 
 #for SearchBox 
 BAIDU_PREBUILT += \

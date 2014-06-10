@@ -579,7 +579,7 @@ endif
 
 ############## add prepare_source ######################
 $(BAIDU_SYSTEM)/%: $(PREPARE_SOURCE)
-	@echo ">>> prepare $@ done"
+#	@echo ">>> prepare $@ done"
 
 ################### clean ##############################
 .PHONY: clean
