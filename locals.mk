@@ -138,6 +138,21 @@ AUTOCOM_PREPARE_MERGED := $(AUTOCOM_BAIDU)/.preparemerged
 
 AUTOCOM_PRECONDITION   := $(AUTOCOM_BAIDU)/.autocom_precondition
 
+####################### auto fix ##########################
+AUTOFIX                 := $(OUT_OBJ_DIR)/autofix
+AUTOFIX_TARGET          := $(AUTOFIX)/target
+
+AUTOFIX_OUT             := $(OUT_DIR)/reject-fixed
+
+AUTOFIX_PREPARE_TARGET  := $(AUTOFIX_TARGET)/.autofix_prepare_target
+AUTOFIX_JOB             := $(AUTOFIX)/.autofix
+AUTOFIX_PYTHON_JOB      := $(AUTOFIX)/.autofix_python
+
+PATCHALL_JOB            := $(OUT_DIR)/reject/.patchall
+
+METHOD_TO_BOSP_PYTHON_JOB := $(AUTOFIX)/.methodtobosp_python
+SMALI_TO_BOSP_PYTHON_JOB := $(AUTOFIX)/.smalitobosp_python
+
 ################ merged_target_files ######################
 OUT_BOOTABLE_IMAGES  := $(OUT_TARGET_DIR)/BOOTABLE_IMAGES
 OUT_META             := $(OUT_TARGET_DIR)/META
@@ -281,6 +296,7 @@ DEX_OPT                  := $(PORT_TOOLS)/dexopt
 DEX_PRE_OPT              := $(PORT_TOOLS)/dex-preopt
 
 SCHECK                   := $(PORT_TOOLS)/smaliparser/SCheck
+AUTOFIX_TOOL             := python $(PORT_TOOLS)/smaliparser/reject.py
 
 ################### tools for project ####################
 PRJ_CUSTOM_TARGETFILES := $(PRJ_ROOT)/custom_targetfiles.sh

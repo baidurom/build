@@ -240,6 +240,13 @@ $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: targetSdkVersion := $(shell $(call g
 $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: $(FRAMEWORK_RES_SOURCE) 
 	$(hide) echo ">>> start auto merge framework-res"
 	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK)
+	$(hide) rm -rf $(OUT_OBJ_FRAMEWORK)/baidu-res-overlay
+	$(hide) cp -rf $(BAIDU_FRAMEWORK_OVERLAY) $(OUT_OBJ_FRAMEWORK)/baidu-res-overlay
+	$(hide) $(call formatOverlay,$(OUT_OBJ_FRAMEWORK)/baidu-res-overlay)
+	$(hide) $(if $(PRJ_FRAMEWORK_OVERLAY_SOURCES), \
+				rm -rf $(OUT_OBJ_FRAMEWORK)/project-res-overlay; \
+				cp -rf $(PRJ_FRAMEWORK_OVERLAY) $(OUT_OBJ_FRAMEWORK)/project-res-overlay; \
+				$(call formatOverlay,$(OUT_OBJ_FRAMEWORK)/project-res-overlay);,)
 	$(AAPT) package -u -x -z \
 		$(addprefix -c , $(PRIVATE_PRODUCT_AAPT_CONFIG)) \
 		$(addprefix --preferred-configurations , $(PRIVATE_PRODUCT_AAPT_PREF_CONFIG)) \
@@ -247,8 +254,8 @@ $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: $(FRAMEWORK_RES_SOURCE)
 		$(if $(targetSdkVersion),$(addprefix --target-sdk-version , $(targetSdkVersion)),) \
 		-M $(VENDOR_FRAMEWORK_RES_OUT)/AndroidManifest.xml \
 		-A $(VENDOR_FRAMEWORK_RES_OUT)/assets \
-		$(if $(PRJ_FRAMEWORK_OVERLAY_SOURCES),-S $(PRJ_FRAMEWORK_OVERLAY),)\
-		-S $(BAIDU_FRAMEWORK_OVERLAY) \
+		$(if $(PRJ_FRAMEWORK_OVERLAY_SOURCES),-S $(OUT_OBJ_FRAMEWORK)/project-res-overlay,)\
+		-S $(OUT_OBJ_FRAMEWORK)/baidu-res-overlay \
 		-S $(VENDOR_FRAMEWORK_RES_OUT)/res \
 		-F $@ 1>/dev/null
 	$(hide) echo ">>> aapt done"

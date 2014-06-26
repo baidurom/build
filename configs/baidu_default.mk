@@ -12,7 +12,8 @@ BAIDU_PREBUILT += \
 	app/BaiduAppSearch.apk \
 	app/BaiduKeyguard.apk \
 	app/BaiduOpService.apk \
-	app/HelpBook.apk
+	app/HelpBook.apk \
+	app/Lecai.apk
 
 BAIDU_PREBUILT += \
 	lib/libWordSegService.so \
@@ -227,7 +228,8 @@ BAIDU_PRESIGNED_APPS += \
 	app/CoolReader.apk \
 	app/GameCenter.apk \
 	app/BaiduOpService.apk \
-	app/HelpBook.apk
+	app/HelpBook.apk \
+	app/Lecai.apk
 
 # define the apk and jars which need update the res id
 BAIDU_UPDATE_RES_APPS += \

@@ -123,10 +123,12 @@ else
 REVISE_OPTION := True
 endif
 
-patchall: $(AUTOCOM_PRECONDITION)
+patchall $(PATCHALL_JOB): $(AUTOCOM_PRECONDITION)
 	@echo ""
 	@echo ">>> auto patch all ..."
 	$(hide) $(AUTOPATCH_TOOL) $(PATCH_ALL_XML) $(REVISE_OPTION)
+	$(hide) mkdir -p `dirname $(PATCHALL_JOB)`
+	$(hide) touch $(PATCHALL_JOB)
 
 
 patchone: $(AUTOCOM_PRECONDITION)
@@ -195,4 +197,80 @@ porting:
 	$(hide) if [ -z $(MASTER) ]; then echo $(PORTING_USAGE); exit 1; fi
 	$(hide) $(PORTING_TOOL) ${MASTER} ${NUM}
 
+
+# auto fix reject
+AUTOFIX_TARGET_LIST := $(patsubst %,%.jar.out,$(vendor_modify_jars))
+AUTOFIX_DECODE_JARS := $(patsubst %,$(VENDOR_FRAMEWORK)/%,core.jar)
+AUTOFIX_OBJ_TARGET_LIST := $(patsubst %,$(AUTOFIX_TARGET)/%,$(AUTOFIX_TARGET_LIST))
+
+.PHONY: autofix_check
+autofix_check:
+	$(hide) if [ ! -d $(OUT_DIR)/reject ]; then \
+				echo ">>>> Error: $(OUT_DIR)/reject doesn't exist! You need run 'make patchall' first!"; \
+				exit 1; \
+			fi;
+	$(hide) if [ ! -d autopatch/bosp ]; then \
+				echo ">>>> Error: autopatch/bosp doesn't exist! You need run 'make patchall' first!"; \
+				exit 1; \
+			fi;
+	$(hide) if [ ! -d autopatch/aosp ]; then \
+				echo ">>>> Error: autopatch/aosp doesn't exist! You need run 'make patchall' first!"; \
+				exit 1; \
+			fi;
+
+.PHONY: autofix_prepare_target
+autofix_prepare_target $(AUTOFIX_PREPARE_TARGET): autofix_check $(IF_VENDOR_RES)
+	$(hide) rm -rf $(AUTOFIX_TARGET)
+	$(hide) mkdir -p $(AUTOFIX_TARGET)
+	$(hide) $(foreach jar,$(AUTOFIX_TARGET_LIST), \
+				if [ -d $(jar) ]; then \
+					$(call dir_copy,$(jar),$(AUTOFIX_TARGET)/$(jar)) \
+					$(eval jarBaseName := $(call getBaseName,$(call getBaseName,$(jar)))) \
+					$(foreach package,$(BAIDU_PREBUILT_PACKAGE_$(jarBaseName)),\
+						$(eval srcDir := autopatch/bosp/$(jar)/smali/$(package)) \
+						$(eval destDir := $(AUTOFIX_TARGET)/$(jar)/smali/$(package)) \
+						$(call safe_dir_copy,$(srcDir),$(destDir))) \
+				else \
+					echo ">>> Warning: $(jar) doesn't exsit! Are you run 'makeconfig' and 'make newproject' before?"; \
+					echo "             this may cause AttributeError when run reject.py"; \
+				fi;)
+	$(hide) $(foreach jar,$(AUTOFIX_DECODE_JARS),$(call decode,$(jar),$(AUTOFIX_TARGET)/$(notdir $(jar)).out,$(APKTOOL_VENDOR_TAG)))
+	$(hide) touch $(AUTOFIX_PREPARE_TARGET)
+
+define copy_obj_target_to_device
+	$(hide) $(foreach jar,$(AUTOFIX_TARGET_LIST), \
+				$(eval jarBaseName := $(call getBaseName,$(call getBaseName,$(jar)))) \
+				$(foreach package,$(BAIDU_PREBUILT_PACKAGE_$(jarBaseName)),\
+					rm -rf $(AUTOFIX_TARGET)/$(jar)/smali/$(package);))
+	$(hide) $(foreach jar,$(AUTOFIX_OBJ_TARGET_LIST),if [ -d $(jar) ]; then cp -rf $(jar) $(PRJ_ROOT); fi;)
+endef
+
+
+$(AUTOFIX_PYTHON_JOB): autofix_prepare_target
+	$(hide) rm -rf $(AUTOFIX_OUT)
+	$(hide) cp -rf $(OUT_DIR)/reject $(OUT_DIR)/.reject_bak
+	$(hide) $(AUTOFIX_TOOL)
+	$(hide) rm -rf $(OUT_DIR)/reject
+	$(hide) mv $(OUT_DIR)/.reject_bak $(OUT_DIR)/reject
+	$(hide) touch $(AUTOFIX_PYTHON_JOB)
+
+.PHONY: autofix
+autofix $(AUTOFIX_JOB): $(AUTOFIX_PYTHON_JOB)
+	$(call copy_obj_target_to_device)
+
+$(SMALI_TO_BOSP_PYTHON_JOB): autofix_prepare_target
+	$(hide) $(SCHECK) --smalitobosp `cat $(SMALI_FILE)`
+
+.PHONY: smalitobosp
+smalitobosp: $(SMALI_TO_BOSP_PYTHON_JOB)
+	$(call copy_obj_target_to_device)
+
+.PHONY: methodtobosp
+$(METHOD_TO_BOSP_PYTHON_JOB): autofix_prepare_target
+	$(hide) $(SCHECK) --methodtobosp $(SMALI_FILE) `if [ -f $(METHOD) ]; then cat $(METHOD); else echo $(METHOD); fi;`
+	$(hide) touch $(METHOD_TO_BOSP_PYTHON_JOB)
+
+methodtobosp:
+methodtobosp: $(METHOD_TO_BOSP_PYTHON_JOB)
+	$(call copy_obj_target_to_device)
 
