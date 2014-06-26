@@ -248,6 +248,7 @@ endef
 
 $(AUTOFIX_PYTHON_JOB): autofix_prepare_target
 	$(hide) rm -rf $(AUTOFIX_OUT)
+	$(hide) rm -rf $(OUT_DIR)/.reject_bak
 	$(hide) cp -rf $(OUT_DIR)/reject $(OUT_DIR)/.reject_bak
 	$(hide) $(AUTOFIX_TOOL)
 	$(hide) rm -rf $(OUT_DIR)/reject
