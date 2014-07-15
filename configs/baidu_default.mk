@@ -12,6 +12,7 @@ BAIDU_PREBUILT += \
 	app/BaiduAppSearch.apk \
 	app/BaiduKeyguard.apk \
 	app/BaiduOpService.apk \
+	app/BaiYiSearch.apk \
 	app/HelpBook.apk \
 	app/Lecai.apk
 
@@ -200,6 +201,7 @@ BAIDU_PREBUILT += \
 	app/BaiduGallery3D.apk \
 	app/Email2.apk \
 	app/Exchange2.apk \
+	app/BaiduAccount.apk \
 
 BAIDU_PREBUILT += \
     app/Yellowpages.apk \
@@ -228,6 +230,7 @@ BAIDU_PRESIGNED_APPS += \
 	app/CoolReader.apk \
 	app/GameCenter.apk \
 	app/BaiduOpService.apk \
+	app/BaiYiSearch.apk \
 	app/HelpBook.apk \
 	app/Lecai.apk
 
