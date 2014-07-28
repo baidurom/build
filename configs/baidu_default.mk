@@ -14,7 +14,6 @@ BAIDU_PREBUILT += \
 	app/BaiduOpService.apk \
 	app/BaiYiSearch.apk \
 	app/HelpBook.apk \
-	app/Lecai.apk
 
 BAIDU_PREBUILT += \
 	lib/libWordSegService.so \
@@ -185,7 +184,7 @@ BAIDU_PREBUILT += \
 	app/BaiduWeather.apk \
 	app/BaiduSoundRecorder.apk \
 	app/BaiduTts.apk \
-	app/CoolReader.apk \
+	app/iReader.apk \
 	app/GameCenter.apk \
 	app/BaiduCamera.apk \
 	app/BaiduTheme.apk \
@@ -202,6 +201,7 @@ BAIDU_PREBUILT += \
 	app/Email2.apk \
 	app/Exchange2.apk \
 	app/BaiduAccount.apk \
+
 
 BAIDU_PREBUILT += \
     app/Yellowpages.apk \
@@ -227,12 +227,11 @@ BAIDU_PRESIGNED_APPS += \
 	app/VoiceAssistant.apk \
 	app/BaiduAppSearch.apk \
 	app/BaiduKeyguard.apk \
-	app/CoolReader.apk \
+	app/iReader.apk \
 	app/GameCenter.apk \
 	app/BaiduOpService.apk \
 	app/BaiYiSearch.apk \
 	app/HelpBook.apk \
-	app/Lecai.apk
 
 # define the apk and jars which need update the res id
 BAIDU_UPDATE_RES_APPS += \
@@ -265,7 +264,7 @@ BAIDU_PREBUILT_LOW_RAM_REMOVE := \
 	app/BaiduClickSearch.apk \
 	app/BaiduVirusKilling.apk \
 	app/Yellowpages.apk \
-	app/CoolReader.apk \
+	app/iReader.apk \
 	app/GameCenter.apk \
 	app/FindmeDM.apk \
 	lib/libbdocr.so
