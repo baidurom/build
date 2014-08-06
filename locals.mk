@@ -179,7 +179,7 @@ PRJ_OVERLAY           := overlay
 PRJ_FRAMEWORK_OVERLAY := $(PRJ_OVERLAY)/framework-res/res
 
 ################# baidu overlay ###########################
-BAIDU_OVERLAY           := $(PORT_ROOT)/baidu/overlay
+BAIDU_OVERLAY           := $(PORT_ROOT)/baidu/frameworks/overlay
 BAIDU_FRAMEWORK_OVERLAY := $(BAIDU_OVERLAY)/frameworks/base/core/res/res
 
 ################## baidu source ###########################
