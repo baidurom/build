@@ -281,19 +281,19 @@ BAIDU_SERVICES += \
 	/system/bin/serviceext
 
 BAIDU_PREBUILT_PACKAGE_android.policy := \
-	android \
+	baidu \
 	com/baidu \
 	com/yi \
 	yi
 
 BAIDU_PREBUILT_PACKAGE_framework := \
-	android \
+	baidu \
 	com/baidu \
 	com/yi \
 	yi
 
 BAIDU_PREBUILT_PACKAGE_services := \
-	android \
+	baidu \
 	com/baidu \
 	com/yi \
 	yi
