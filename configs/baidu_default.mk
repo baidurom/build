@@ -287,8 +287,16 @@ BAIDU_PREBUILT_PACKAGE_android.policy := \
 	yi
 
 BAIDU_PREBUILT_PACKAGE_framework := \
+	android \
 	com/baidu \
-	baidu
+	com/yi \
+	yi
+
+BAIDU_PREBUILT_PACKAGE_services := \
+	android \
+	com/baidu \
+	com/yi \
+	yi
 
 NEED_COMPELETE_MODULE_PAIR := \
 	app/Phone.apk:Phone \
