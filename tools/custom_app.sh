@@ -8,4 +8,6 @@ if [ "$apkBaseName" = "Phone" ];then
     rm -rf $tempSmaliDir/res/values-es
     rm -rf $tempSmaliDir/res/values-es-rUS
     rm -rf $tempSmaliDir/res/values-it
+    rm -rf $tempSmaliDir/res/values-ru
+    rm -rf $tempSmaliDir/res/values-zh-rTW
 fi
