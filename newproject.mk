@@ -1,12 +1,14 @@
 OEM_TARGET_DIR			:= $(OUT_DIR)/oem_target_files
 OEM_TARGET_ZIP			:= $(OUT_DIR)/oem_target_files.zip
 OEM_TARGET_DEODEX_ZIP	:= $(OUT_DIR)/oem_target_files.zip.deodex.zip
-OEM_OTA_ZIP				:= $(OUT_DIR)/oem_ota_rom.zip
+VENDOR_TARGET_ZIP		:= $(OUT_DIR)/vendor_target_files.zip
+VENDOR_TARGET_DIR		:= $(OUT_DIR)/vendor_target_files
+VENDOR_OTA_ZIP			:= $(OUT_DIR)/vendor_ota.zip
 METAINF					:= $(VENDOR_DIR)/METAINF
-TARGET_FILES_FROM_DEVICE:= $(PORT_TOOLS)/target_files_from_device.sh
+TARGET_FILES_FROM_DEVICE:= $(PORT_BUILD_TOOLS)/target_files_from_device.sh
 
-############# newproject, oemotarom #####################
-./PHONY: newproject oemotarom
+##################### newproject ########################
+./PHONY: newproject
 
 newproject: prepare-vendor prepare-vendor-boot prepare-vendor-recovery prepare-metainf decodefile
 	$(hide) if [ -f $(OUT_DIR)/build-info-to-user.txt ];then \
@@ -14,14 +16,8 @@ newproject: prepare-vendor prepare-vendor-boot prepare-vendor-recovery prepare-m
 			fi
 	$(hide) echo ">>> newproject done"
 
-oemotarom: $(OEM_OTA_ZIP)
-	$(hide) echo ">>> oemotarom done"
-
 $(OEM_TARGET_ZIP): $(PRJ_RECOVERY_FSTAB)
 	$(hide) $(TARGET_FILES_FROM_DEVICE) target
-
-$(OEM_OTA_ZIP): $(OEM_TARGET_ZIP)
-	$(hide) $(TARGET_FILES_FROM_DEVICE) ota
 
 $(OEM_TARGET_DEODEX_ZIP): $(OEM_TARGET_ZIP)
 	$(hide) $(DEODEX) $(OEM_TARGET_ZIP)
@@ -37,7 +33,7 @@ prepare-vendor: $(OEM_TARGET_DEODEX_ZIP)
 	$(hide) echo ">>> prepare-vendor done"
 
 ifeq ($(PRJ_RECOVERY_FSTAB),$(wildcard $(PRJ_RECOVERY_FSTAB)))
-    $(info # use $(PRJ_RECOVERY_FSTAB))
+$(info # use $(PRJ_RECOVERY_FSTAB))
 else
 $(PRJ_RECOVERY_FSTAB): unpack-recovery
 	$(hide) cp $(OUT_OBJ_RECOVERY_FSTAB) $@
@@ -67,7 +63,7 @@ prepare-vendor-recovery: prepare-vendor
 prepare-metainf: prepare-vendor
 	$(hide) rm -rf $(METAINF)
 	$(hide) unzip -q $(VENDOR_FRAMEWORK)/framework.jar -d $(METAINF)
-	$(hide) rm -f $(METAINF)/classes.dex
+	$(hide) rm -rf $(METAINF)/classes.dex $(METAINF)/assets
 	$(hide) echo ">>> prepare-metainf done"
 
 ################ decode files ###########################
@@ -100,3 +96,27 @@ ifoemvendor: prepare-vendor
 ./PHONY: decodefile
 decodefile: $(PRJ_DECODE_APKS_OUT) $(PRJ_DECODE_JARS_OUT)
 	$(hide) echo ">>> decodefile done"
+
+###################### vendor ota ########################
+./PHONY: vendorota oemotarom
+
+vendorota oemotarom: $(VENDOR_OTA_ZIP)
+	$(hide) echo ">>> OUT ==> $(VENDOR_OTA_ZIP)"
+	$(hide) echo ">>> build vendor ota done"
+
+$(VENDOR_TARGET_ZIP): $(VENDOR_RECOVERY_FSTAB)
+	$(hide) echo ">>> build vendor target files ..."
+	$(hide) if [ ! -d $(OUT_DIR) ]; then mkdir -p $(OUT_DIR); fi
+	$(hide) cd $(VENDOR_DIR); zip -qry $(PRJ_ROOT)/$(VENDOR_TARGET_ZIP).tmp *; cd - > /dev/null
+	$(hide) unzip -q $(VENDOR_TARGET_ZIP).tmp -d $(VENDOR_TARGET_DIR)
+	$(hide) rm -rf $(VENDOR_TARGET_ZIP).tmp
+	$(hide) mv $(VENDOR_TARGET_DIR)/system $(VENDOR_TARGET_DIR)/SYSTEM
+	$(hide) rm -rf $(VENDOR_TARGET_DIR)/BOOTABLE_IMAGES/ $(VENDOR_TARGET_DIR)/BOOT
+	$(hide) if [ x"false" = x"$(strip $(recovery_ota_assert))" ]; then \
+				echo "recovery_ota_assert=false" >> $(VENDOR_TARGET_DIR)/META/misc_info.txt; \
+			fi
+	$(hide) cd $(VENDOR_TARGET_DIR); zip -qry $(PRJ_ROOT)/$(VENDOR_TARGET_ZIP) *; cd - > /dev/null
+
+$(VENDOR_OTA_ZIP): $(VENDOR_TARGET_ZIP)
+	$(hide) echo ">>> build vendor ota package ..."
+	$(hide) $(TARGET_FILES_FROM_DEVICE) ota

@@ -8,6 +8,7 @@ Created on 2012-12-20
 
 import sys
 import os
+import re
 
 DIRECT_METHOD_FLAG = "# direct methods"
 
@@ -62,7 +63,7 @@ class UpInterrJava(object):
                         rName = rName.replace(r'.', r'_')
 
                     linefill = "\n.field public static final %s:I = %s\n" % (rName, rId)
-                    fileContent = fileContent.replace(linefill, '')
+                    fileContent = re.sub(r'^.field public static final %s:I *=.*$' %(rName), '',  fileContent, 0, re.M)
                     fileContent = fileContent.replace("\n%s" % DIRECT_METHOD_FLAG, "%s\n%s" % (linefill, DIRECT_METHOD_FLAG), 1)
 
                 resFile.seek(0, 0)

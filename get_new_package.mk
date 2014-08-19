@@ -20,6 +20,7 @@ endif
 get-new-package $(BAIDU_BASE_ZIP): deodex_thread_num := $(shell echo "$(MAKE)" | awk '{print $$2}')
 get-new-package $(BAIDU_BASE_ZIP):
 	$(hide) echo ">>> Deodex $(BAIDU_ZIP)"
+	$(hide) touch $(BAIDU_ZIP)
 	$(hide) $(DEODEX) $(BAIDU_ZIP) $(deodex_thread_num)
 	$(hide) if [ -f $(BAIDU_ZIP).deodex.zip ];then \
 				mv $(BAIDU_ZIP).deodex.zip $(BAIDU_BASE_ZIP); \
@@ -73,12 +74,17 @@ prepare-new-source:
 	$(hide) echo ">>> Nothing to do: $@"
 endif
 
+$(BAIDU_ZIP): tempDir := $(shell mktemp -u)
 $(BAIDU_ZIP):
-	@ echo ">>> zip from $(REFERENCE_BAIDU_BASE) to $@"
+	@ echo ">>> zip from $(BAIDU_RELEASE) to $@"
 	$(hide) rm -rf $(BAIDU_ZIP)
-	$(hide) cd $(REFERENCE_BAIDU_BASE) 2>&1 > /dev/null && zip baidu.zip * -r -q && cd - 2>&1 > /dev/null
+	$(hide) mkdir -p $(tempDir)
+	$(hide) cp -rf $(BAIDU_RELEASE)/* $(tempDir)
+	$(hide) $(PORT_CUSTOM_BAIDU_ZIP) $(tempDir) $(DENSITY)
+	$(hide) cd $(tempDir) 2>&1 > /dev/null && zip baidu.zip * -r -q && cd - 2>&1 > /dev/null
 	$(hide) mkdir -p `dirname $@`
-	$(hide) mv $(REFERENCE_BAIDU_BASE)/baidu.zip $@
+	$(hide) mv $(tempDir)/baidu.zip $@
+	$(hide) rm -rf $(tempDir)
 
 $(PREPARE_SOURCE): $(BAIDU_BASE_ZIP)
 	$(hide) echo ">>> Prepare baidu sources";

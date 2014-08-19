@@ -108,7 +108,7 @@ endef
 
 define getprop
 if [ -f $(2) ]; then \
-    awk -F= '/$(1)/{print $$2}' $(2); \
+    grep -v "^[ \t]*#" $(2) | awk -F= '/$(1)/{print $$2}'; \
 fi
 endef
 
@@ -116,9 +116,18 @@ define getMinSdkVersionFromApktoolYml
 if [ -f $(1) ]; then awk '/minSdkVersion:/{print $$NF}' $(1) | grep '[0-9]*' -o; fi
 endef
 
+define getMinSdkVersionFromApktoolYmlFD
+if [ -f $(1) ]; then awk '/minSdkVersion:/{print $$$$NF}' $(1) | grep '[0-9]*' -o; fi
+endef
+
 define getTargetSdkVersionFromApktoolYml
 if [ -f $(1) ]; then awk '/targetSdkVersion:/{print $$NF}' $(1) | grep '[0-9]*' -o; fi
 endef
+
+define getTargetSdkVersionFromApktoolYmlFD
+if [ -f $(1) ]; then awk '/targetSdkVersion:/{print $$$$NF}' $(1) | grep '[0-9]*' -o; fi
+endef
+
 
 define formatOverlay
 if [ -d $(1) ]; then find $(1) -name "*.xml" | xargs sed -i 's/\( name *= *"\)android:/\1/g'; fi

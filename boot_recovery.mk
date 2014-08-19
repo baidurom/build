@@ -1,5 +1,9 @@
 # boot_recovery.mk
 
+######## Error Exit Num ##########
+ERR_NOT_PREPARE_RECOVERY_IMG=211
+ERR_NOT_PREPARE_BOOT_IMG=212
+
 # Some custom defines
 # vendor_modify_images := boot/boot.img recovery/recovery.img
 
@@ -42,7 +46,11 @@ unpack-boot:
 	$(hide) echo ">>> Warning: newproject without preparing vendor/BOOT directory"
 else
 # unpack boot.img to out/obj/BOOT
-unpack-boot: $(PRJ_BOOT_IMG)
+unpack-boot:
+	$(hide) if [ ! -e $(PRJ_BOOT_IMG) ];then \
+				echo ">>> can not find $(PRJ_BOOT_IMG)";  \
+				exit $(ERR_NOT_PREPARE_BOOT_IMG); \
+			fi
 	$(hide) rm -rf $(OUT_OBJ_BOOT)
 	$(hide)	$(UNPACK_BOOT_PY) $(PRJ_BOOT_IMG) $(OUT_OBJ_BOOT);
 	$(hide) $(call enable_adb_root,$(OUT_OBJ_BOOT)/RAMDISK/default.prop)
@@ -98,7 +106,6 @@ VENDOR_RECOVERY         := $(VENDOR_DIR)/RECOVERY
 SOURCE_RECOVERY         := $(BAIDU_DIR)/RECOVERY
 OUT_OBJ_RECOVERY        := $(OUT_OBJ_DIR)/RECOVERY
 OUT_RECOVERY_IMG        := $(OUT_BOOTABLE_IMAGES)/$(RECOVERY_IMG)
-OUT_RECOVERY_FSTAB      := $(OUT_RECOVERY)/RAMDISK/etc/recovery.fstab
 
 VENDOR_RECOVERY_KERNEL       := $(VENDOR_RECOVERY)/kernel
 VENDOR_RECOVERY_RAMDISK	     := $(VENDOR_RECOVERY)/RAMDISK
@@ -114,6 +121,10 @@ OUT_OBJ_RECOVERY_DEFAULT_PROP:= $(OUT_OBJ_RECOVERY_RAMDISK)/default.prop
 
 # unpack recovery.img to out/obj/RECOVERY
 unpack-recovery:
+	$(hide) if [ ! -e $(PRJ_RECOVERY_IMG) ];then \
+				echo ">>> can not find $(PRJ_RECOVERY_IMG)";  \
+				exit $(ERR_NOT_PREPARE_RECOVERY_IMG); \
+			fi
 	$(hide) rm -rf $(OUT_OBJ_RECOVERY)
 	$(hide) $(UNPACK_BOOT_PY) $(PRJ_RECOVERY_IMG) $(OUT_OBJ_RECOVERY)
 

@@ -40,7 +40,6 @@ BAIDU_PREBUILT += \
 	lib/libbaidukeyguardbds.so \
 	lib/libyi_backup_module.so \
 	lib/libpush-socket.so \
-	lib/libacs.so \
 	lib/libBaiduJni.so \
 	lib/libBaiduJniAnti.so \
 	lib/libSMSFilter.so \
@@ -204,18 +203,19 @@ BAIDU_PREBUILT += \
 
 
 BAIDU_PREBUILT += \
-    app/Yellowpages.apk \
+	app/Yellowpages.apk \
 	etc/onlinephonebook.db
 
 BAIDU_PREBUILT += \
 	app/BaiduSecurityCenter.apk \
-	lib/libBaiduSecurityJni.so \
-	lib/libacs.so \
+	lib/libBaiyiSecurityJni.so \
+	lib/libBaiyiAcs.so \
 	app/BaiduVideoEditor.apk \
 	app/BulletinSubPage.apk
 
 BAIDU_PREBUILT += \
-    lib/libyi_compress_module.so
+	lib/libyi_compress_module.so \
+	lib/libyi_multitheme_module.so
 
 BAIDU_PRESIGNED_APPS += \
 	app/BaiduBrowser.apk \
@@ -257,8 +257,7 @@ BAIDU_PROPERTY_OVERRIDES := \
 	ro.config.ringtone=HarvestSeason.ogg \
 	ro.config.alarm_alert=KusoAlarm.ogg \
 	ro.config.rootperm.enable=1 \
-	persist.sys.timezone=Asia/Shanghai \
-	ro.rom.mt.font=0
+	persist.sys.timezone=Asia/Shanghai
 
 BAIDU_PREBUILT_LOW_RAM_REMOVE := \
 	app/BaiduClickSearch.apk \
@@ -281,12 +280,7 @@ BAIDU_SERVICES += \
 	/system/bin/serviceext
 
 BAIDU_PREBUILT_PACKAGE_android.policy := \
-	baidu \
-	com/baidu \
-	com/yi \
-	yi
-
-BAIDU_PREBUILT_PACKAGE_framework := \
+	android \
 	baidu \
 	com/baidu \
 	com/yi \
@@ -298,16 +292,28 @@ BAIDU_PREBUILT_PACKAGE_services := \
 	com/yi \
 	yi
 
-NEED_COMPELETE_MODULE_PAIR := \
-	app/Phone.apk:Phone \
+BAIDU_PREBUILT_PACKAGE_framework := \
+	baidu \
+	com/baidu \
+	com/yi \
+	yi
+
+MINI_SYSTEM_SAVE_APPS += \
+	BaiduGallery3D
+
+ifeq ($(filter Phone,$(vendor_modify_apps)),)
+NEED_COMPELETE_MODULE_PAIR += \
+	app/Phone.apk:Phone
+endif
+
+ifeq ($(filter android.policy,$(vendor_modify_jars)),)
+NEED_COMPELETE_MODULE_PAIR += \
 	framework/android.policy.jar:android.policy.jar.out
+endif
 
 VENDOR_COM_MODULE_PAIR := \
 	framework/core.jar:core.jar.out
 
-ifeq ($(filter ro.rom.mt.font=%,$(override_property)),ro.rom.mt.font=1)
-BAIDU_PREBUILT += lib/libskia.so
-endif
 
 BAIDU_PREBUILT_DIRS := $(sort $(strip $(baidu_saved_dirs)) $(BAIDU_PREBUILT_DIRS))
 BAIDU_PREBUILT := $(sort $(strip $(baidu_saved_files)) $(BAIDU_PREBUILT))
@@ -316,3 +322,5 @@ ifeq ($(strip $(LOW_RAM_DEVICE)),true)
 $(info low ram device, remove $(BAIDU_PREBUILT_LOW_RAM_REMOVE))
 BAIDU_PREBUILT := $(filter-out $(BAIDU_PREBUILT_LOW_RAM_REMOVE),$(BAIDU_PREBUILT))
 endif
+
+MINI_SYSTEM_SAVE_APPS := $(patsubst %,app/%.apk,$(MINI_SYSTEM_SAVE_APPS))

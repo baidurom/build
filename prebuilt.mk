@@ -40,7 +40,7 @@ VENDOR_SIGN_APPS := $(filter %.apk,$(VENDOR_PREBUILT_FILES))
 $(foreach apk,$(VENDOR_SIGN_APPS),\
     $(eval SIGN_APPS += $(VENDOR_SYSTEM)/$(apk):$(OUT_SYSTEM)/$(apk)))
 
-$(info # VENDOR_SIGN_APPS:$(VENDOR_SIGN_APPS))
+#$(info # VENDOR_SIGN_APPS:$(VENDOR_SIGN_APPS))
 
 VENDOR_PREBUILT_FILES := $(filter-out %.apk,$(VENDOR_PREBUILT_FILES))
 ################## define the prebuilt targets ###############

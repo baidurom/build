@@ -1,6 +1,11 @@
 # main.mk
 
-$(info # ------------------------------------------------------------------)
+#$(info # ------------------------------------------------------------------)
+##################  custom #########################
+ifneq ($(wildcard $(PORT_BUILD)/custom/defines.mk),)
+include $(PORT_BUILD)/custom/defines.mk
+endif
+
 include $(PORT_BUILD)/locals.mk
 include $(PORT_BUILD)/defines.mk
 
@@ -17,12 +22,12 @@ $(foreach mk, \
 .PHONY: otapackage ota fullota
 
 ifeq ($(strip $(wildcard $(BAIDU_SYSTEM))),)
-$(info # no source directory, need $(PREPARE_SOURCE))
+#$(info # no source directory, need $(PREPARE_SOURCE))
 ota fullota otapackage: check-project $(PREPARE_SOURCE)
 	$(hide) cd $(PRJ_ROOT) && $(MAKE) ota-files-zip
 else
 ifneq ($(strip $(serverdir)),)
-$(info # serverdir is not null, need $(PREPARE_SOURCE): $(serverdir))
+#$(info # serverdir is not null, need $(PREPARE_SOURCE): $(serverdir))
 ota fullota otapackage: check-project $(PREPARE_SOURCE)
 	$(hide) cd $(PRJ_ROOT) && $(MAKE) ota-files-zip
 else
@@ -46,8 +51,8 @@ else
 OUT_TARGET_ZIP := $(NEED_SIGNED_TARGET_ZIP)
 endif
 
-ifneq ($(wildcard $(PORT_BUILD)/version.mk),)
-include $(PORT_BUILD)/version.mk
+ifneq ($(wildcard $(PORT_BUILD)/custom/version.mk),)
+include $(PORT_BUILD)/custom/version.mk
 endif
 
 ################# check-project ######################
@@ -91,10 +96,10 @@ clean-autopatch:
 
 ################### boot recovery ######################
 ifeq ($(PRJ_ROOT)/boot_recovery.mk,$(wildcard $(PRJ_ROOT)/boot_recovery.mk))
-    $(info # use project boot_recovery.mk)
+#    $(info # use project boot_recovery.mk)
     include $(PRJ_ROOT)/boot_recovery.mk
 else
-    $(info # use build/boot_recovery.mk)
+#    $(info # use build/boot_recovery.mk)
     include $(PORT_BUILD)/boot_recovery.mk
 endif
 TARGET_FILES_SYSTEM += bootimage recoveryimage
@@ -248,8 +253,8 @@ $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: $(FRAMEWORK_RES_SOURCE)
 				cp -rf $(PRJ_FRAMEWORK_OVERLAY) $(OUT_OBJ_FRAMEWORK)/project-res-overlay; \
 				$(call formatOverlay,$(OUT_OBJ_FRAMEWORK)/project-res-overlay);,)
 	$(AAPT) package -u -x -z \
-		$(addprefix -c , $(PRIVATE_PRODUCT_AAPT_CONFIG)) \
-		$(addprefix --preferred-configurations , $(PRIVATE_PRODUCT_AAPT_PREF_CONFIG)) \
+		$(if $(filter true,$(FULL_RES)),,$(addprefix -c , $(PRIVATE_PRODUCT_AAPT_CONFIG)) \
+										$(addprefix --preferred-configurations , $(PRIVATE_PRODUCT_AAPT_PREF_CONFIG))) \
 		$(if $(minSdkVersion),$(addprefix --min-sdk-version , $(minSdkVersion)),) \
 		$(if $(targetSdkVersion),$(addprefix --target-sdk-version , $(targetSdkVersion)),) \
 		-M $(VENDOR_FRAMEWORK_RES_OUT)/AndroidManifest.xml \
@@ -282,23 +287,34 @@ framework-res: $(OUT_SYSTEM_FRAMEWORK)/framework-res.apk generate-merged-txts
 ############## framework-res end #######################
 
 ############## need update res id's apks ###############
+
 # remove the files which doesn't exist!!
 BAIDU_UPDATE_RES_APPS := $(sort $(strip $(filter $(ALL_BAIDU_FILES),$(BAIDU_UPDATE_RES_APPS))))
 
 # build baidu_modify_apps
 BAIDU_MODIFY_APPS := $(strip $(patsubst %,app/%.apk,$(baidu_modify_apps)))
-$(info # BAIDU_MODIFY_APPS:$(BAIDU_MODIFY_APPS))
+#$(info # BAIDU_MODIFY_APPS:$(BAIDU_MODIFY_APPS))
 $(foreach apk,$(BAIDU_MODIFY_APPS),\
     $(eval $(call baidu_modify_apk_build,$(PRJ_ROOT)/$(call getBaseName,$(apk)),$(apk))))
 
 BAIDU_UPDATE_RES_APPS := $(filter-out $(PRJ_CUSTOM_TARGET),$(BAIDU_UPDATE_RES_APPS))
-$(info # BAIDU_UPDATE_RES_APPS:$(BAIDU_UPDATE_RES_APPS))
+#$(info # BAIDU_UPDATE_RES_APPS:$(BAIDU_UPDATE_RES_APPS))
 
 $(foreach apk,$(BAIDU_UPDATE_RES_APPS),\
-    $(eval $(call baidu_update_template,$(apk))))
+    $(eval AAPT_BUILD_TARGET:=$(BAIDU_SYSTEM)/$(apk)) \
+    $(if $(strip $(filter %.jar,$(apk))),\
+         $(eval SIGN_JARS += $(OUT_OBJ_SYSTEM)/$(apk):$(OUT_SYSTEM)/$(apk)),\
+         $(eval SIGN_APPS += $(OUT_OBJ_SYSTEM)/$(apk):$(OUT_SYSTEM)/$(apk))\
+         $(if $(filter true,$(MINI_SYSTEM)),\
+               $(if $(filter framework/%,$(apk)),,\
+                   $(eval $(call aapt_build_baidu_apk,$(BAIDU_SYSTEM)/$(apk),$(OUT_OBJ_SYSTEM)/$(apk).aapt))\
+                   $(eval AAPT_BUILD_TARGET := $(OUT_OBJ_SYSTEM)/$(apk).aapt)),))\
+    $(if $(strip $(filter $(MINI_SYSTEM_SAVE_APPS),$(apk))),$(eval AAPT_BUILD_TARGET:=$(BAIDU_SYSTEM)/$(apk)),)\
+    $(eval $(call baidu_update_template,$(apk)))\
+    $(eval AAPT_BUILD_TARGET :=))
 
 ################## vendor_modify_apps ##################
-$(info # vendor_modify_apps:$(vendor_modify_apps))
+#$(info # vendor_modify_apps:$(vendor_modify_apps))
 
 $(foreach apk,$(vendor_modify_apps),\
     $(if $(wildcard $(PRJ_ROOT)/$(apk)/smali), \
@@ -318,8 +334,22 @@ BAIDU_SIGNED_APPS := $(sort $(strip $(filter $(ALL_BAIDU_FILES),$(BAIDU_SIGNED_A
 BAIDU_SIGNED_APPS := $(filter-out $(PRJ_CUSTOM_TARGET),$(BAIDU_SIGNED_APPS))
 BAIDU_SIGNED_APPS := $(filter-out $(patsubst %,app/%.apk,$(baidu_remove_apps)),$(BAIDU_SIGNED_APPS))
 
+PRIVATE_MINI_SYSTEM_SAVE_APPS := $(filter $(MINI_SYSTEM_SAVE_APPS),$(BAIDU_SIGNED_APPS))
+
+BAIDU_SIGNED_FR_APPS  := $(filter framework/%,$(BAIDU_SIGNED_APPS)) $(PRIVATE_MINI_SYSTEM_SAVE_APPS)
+BAIDU_SIGNED_APP_APPS := $(filter-out $(PRIVATE_MINI_SYSTEM_SAVE_APPS),$(filter app/%,$(BAIDU_SIGNED_APPS)))
+
 # add the baidu sign apk to SIGN_APPS
-$(foreach apk,$(BAIDU_SIGNED_APPS),\
+ifeq ($(strip $(MINI_SYSTEM)),true)
+$(foreach apk,$(BAIDU_SIGNED_APP_APPS),\
+    $(eval SIGN_APPS += $(OUT_OBJ_SYSTEM)/$(apk).aapt:$(OUT_SYSTEM)/$(apk)) \
+	$(eval $(call aapt_build_baidu_apk,$(BAIDU_SYSTEM)/$(apk),$(OUT_OBJ_SYSTEM)/$(apk).aapt)))
+else
+$(foreach apk,$(BAIDU_SIGNED_APP_APPS),\
+    $(eval SIGN_APPS += $(BAIDU_SYSTEM)/$(apk):$(OUT_SYSTEM)/$(apk)))
+endif
+
+$(foreach apk,$(BAIDU_SIGNED_FR_APPS),\
     $(eval SIGN_APPS += $(BAIDU_SYSTEM)/$(apk):$(OUT_SYSTEM)/$(apk)))
 
 ############# baidu_modify_jars ########################
@@ -372,15 +402,28 @@ $(OUT_OBJ_META)/misc_info.txt: $(VENDOR_META)/misc_info.txt
 	$(hide) mkdir -p $(OUT_OBJ_META)
 	$(hide) cp $< $@
 
-$(OUT_META)/misc_info.txt: $(OUT_OBJ_META)/misc_info.txt
-	$(hide) extensions_path=$$(cat $< | grep "tool_extensions=.\+" | grep -v "tool_extensions="); \
+$(OUT_META)/misc_info.txt: $(OUT_OBJ_META)/misc_info.txt $(OUT_RECOVERY_FSTAB)
+	$(hide) extensions_path=$$(cat $(OUT_OBJ_META)/misc_info.txt | grep "tool_extensions=.\+" | grep -v "tool_extensions="); \
 			if [ -d "$(PRJ_ROOT)/$$extensions_path" -o -f "$(PRJ_ROOT)/$$extensions_path" ];then \
 				echo ">>> absolute path of tool_extensions: $(PRJ_ROOT)/$$extensions_path"; \
 				sed -i '/tool_extensions/d' $<; \
 				echo "tool_extensions=$(PRJ_ROOT)/$$extensions_path" >> $<; \
 			fi
+	$(hide) len=$$(grep -v "^#" $(OUT_RECOVERY_FSTAB) | egrep "ext|emmc|vfat|yaffs" | awk '{print NF}' | head -1); \
+			isNew=$$(grep -v "^#" $(OUT_RECOVERY_FSTAB) | egrep "ext|emmc|vfat|yaffs" | awk '{if ($$2 == "/system"){print "NEW"}}'); \
+			if [ "x$$len" = "x5" ] && [ "x$$isNew" = "xNEW" ]; \
+			then \
+				sed -i '/^fstab_version[ \t]*=.*/d' $(OUT_OBJ_META)/misc_info.txt; \
+				echo "fstab_version=2" >> $(OUT_OBJ_META)/misc_info.txt; \
+			else \
+				sed -i '/^fstab_version[ \t]*=.*/d' $(OUT_OBJ_META)/misc_info.txt; \
+				echo "fstab_version=1" >> $(OUT_OBJ_META)/misc_info.txt; \
+			fi;
+	$(hide) if [ x"false" = x"$(strip $(recovery_ota_assert))" ]; then \
+				echo "recovery_ota_assert=false" >> $(OUT_OBJ_META)/misc_info.txt; \
+			fi
 	$(hide) mkdir -p $(OUT_META);
-	$(hide) cp $< $@
+	$(hide) cp $(OUT_OBJ_META)/misc_info.txt $@
 
 .PHONY: META
 TARGET_FILES_META := META
@@ -405,7 +448,7 @@ OTA_TARGETS += recover_link
 recover_link: target-files-system $(OUT_SYSTEM)
 	$(hide) echo ">>> begin recover the link files in system";
 	$(hide) $(RECOVER_LINK) $(VENDOR_META)/linkinfo.txt $(OUT_TARGET_DIR);
-	$(hide) echo ">>> recover the link files done"
+	$(hide) echo ">>> recover_link done"
 
 ################# update the apk certs #################
 .PHONY: updateapkcerts
@@ -545,26 +588,32 @@ ifneq ($(strip $(SIGN_OTA)),true)
 SIGN_OTA_PARAM := --no_sign
 endif
 
-$(OUT_DIR)/ota_$(PRJ_NAME).zip: $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
+ifneq ($(ROMER),)
+PRJ_FULL_OTA_ZIP := $(OUT_DIR)/ota-$(VERSION_NUMBER)-$(ROMER).zip
+else
+PRJ_FULL_OTA_ZIP := $(OUT_DIR)/ota-$(VERSION_NUMBER).zip
+endif
+
+$(PRJ_FULL_OTA_ZIP): $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
 	$(hide) $(OTA_FROM_TARGET_FILES) \
 			$(FORMAT_PARAM) \
 			$(SIGN_OTA_PARAM) \
 			-n -k $(OTA_CERT) \
 			$(LOGO_BIN_PARAM) \
 			$(OUT_TARGET_ZIP) \
-			$(OUT_DIR)/ota_$(PRJ_NAME).zip;
+			$(PRJ_FULL_OTA_ZIP) || exit 51
 
-ota-files-zip: $(OUT_DIR)/ota_$(PRJ_NAME).zip mkuserimg
-	$(hide) echo ">>> out: $(OUT_DIR)/ota_$(PRJ_NAME).zip";
+ota-files-zip: $(PRJ_FULL_OTA_ZIP) mkuserimg
+	$(hide) echo ">>> OUT ==> $(PRJ_FULL_OTA_ZIP)";
 
 .PHONY: mkuserimg
 
 ifneq ($(strip $(NO_SYSTEM_IMG)),true)
 mkuserimg: $(OUT_TARGET_ZIP)
-	$(hide) echo "OUT_TARGET_ZIP: $(OUT_TARGET_ZIP)"
-	$(hide) echo "PRJ_OUT_TARGET_ZIP: $(PRJ_OUT_TARGET_ZIP)"
+	$(hide) echo ">>> OUT_TARGET_ZIP: $(OUT_TARGET_ZIP)"
+	$(hide) echo ">>> PRJ_OUT_TARGET_ZIP: $(PRJ_OUT_TARGET_ZIP)"
 	$(hide) $(IMG_FROM_TARGET_FILES) $(OUT_TARGET_ZIP) \
-			$(OUT_DIR)/target-files.signed.zip;
+			$(OUT_DIR)/target-files.signed.zip || exit 52
 	$(hide) unzip -o $(OUT_DIR)/target-files.signed.zip -d $(OUT_DIR);
 	$(hide) rm -f $(OUT_DIR)/target-files.signed.zip;
 else
@@ -573,15 +622,15 @@ mkuserimg:
 endif
 
 ##################  server-ota #########################
-ifneq ($(wildcard $(PORT_BUILD)/server_ota.mk),)
-include $(PORT_BUILD)/server_ota.mk
+ifneq ($(wildcard $(PORT_BUILD)/custom/server_ota.mk),)
+include $(PORT_BUILD)/custom/server_ota.mk
 endif
 
 ############### dex target-files #######################
 include $(PORT_BUILD)/dex_opt.mk
 
-ifneq ($(wildcard $(PORT_BUILD)/sign_ota.mk),)
-include $(PORT_BUILD)/sign_ota.mk
+ifneq ($(wildcard $(PORT_BUILD)/custom/sign_ota.mk),)
+include $(PORT_BUILD)/custom/sign_ota.mk
 endif
 
 ############## add prepare_source ######################
@@ -596,4 +645,7 @@ clean: $(CLEAN_TARGETS)
 .PHONY: clean-all
 clean-all: clean clean-baidu-zip clean-autopatch
 
-$(info # ------------------------------------------------------------------)
+################### autofix ##############################
+include $(PORT_BUILD)/autofix.mk
+
+#$(info # ------------------------------------------------------------------)

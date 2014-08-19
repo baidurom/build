@@ -28,6 +28,8 @@ ifeq ($(strip $(ANDROID_SDK_VERSION)),)
     ANDROID_SDK_VERSION := 15
 endif
 
+ROMER := $(strip $(patsubst ro.baidu.romer=%,%,$(filter ro.baidu.romer=%,$(override_property))))
+
 # the version of the target
 # which would be set to build.prop by $(MAKE_BUILD_PROP)
 # eg:
@@ -53,8 +55,6 @@ ifeq ($(strip $(DENSITY)),)
     DENSITY := hdpi
 endif
 
-$(warning DENSITY:$(DENSITY))
-
 DENSITY := $(shell echo $(DENSITY) | tr A-Z a-z)
 
 ifeq ($(filter $(DENSITY),$(ALL_DENSITY)),$(DENSITY))
@@ -63,12 +63,31 @@ else
     $(error density must be one of: $(ALL_DENSITY), ignore case)
 endif
 
+PRODUCT_LOCALES += en_US,zh_CN,en_US,zh_CN,en_US
+
+ifeq ($(DENSITY),mdpi)
+PRODUCT_LOCALES += mdpi
+else
+    ifeq ($(DENSITY),hdpi)
+        PRODUCT_LOCALES += hdpi mdpi
+    else
+        ifeq ($(DENSITY),xhdpi)
+            PRODUCT_LOCALES += xhdpi hdpi mdpi
+        else
+            ifeq ($(DENSITY),xxhdpi)
+                PRODUCT_LOCALES += xxhdpi xhdpi hdpi mdpi
+            else
+                PRODUCT_LOCALES += $(ALL_DENSITY)
+            endif
+        endif
+    endif
+endif
+
 empty :=
 space := $(empty) $(empty)
 comma := $(empty),$(empty)
 
-PRIVATE_PRODUCT_AAPT_CONFIG := \
-	$(subst $(space),$(comma),$(sort normal,nodpi,$(ALL_DENSITY)))
+PRIVATE_PRODUCT_AAPT_CONFIG := $(subst $(space),$(comma),$(sort normal,nodpi,$(PRODUCT_LOCALES)))
 
 PRIVATE_PRODUCT_AAPT_PREF_CONFIG := $(DENSITY)
 
@@ -142,7 +161,7 @@ AUTOCOM_PRECONDITION   := $(AUTOCOM_BAIDU)/.autocom_precondition
 AUTOFIX                 := $(OUT_OBJ_DIR)/autofix
 AUTOFIX_TARGET          := $(AUTOFIX)/target
 
-AUTOFIX_OUT             := $(OUT_DIR)/reject-fixed
+AUTOFIX_OUT             := $(OUT_DIR)/still-reject
 
 AUTOFIX_PREPARE_TARGET  := $(AUTOFIX_TARGET)/.autofix_prepare_target
 AUTOFIX_JOB             := $(AUTOFIX)/.autofix
@@ -161,6 +180,8 @@ OUT_RECOVERY         := $(OUT_TARGET_DIR)/RECOVERY
 OUT_SYSTEM           := $(OUT_TARGET_DIR)/SYSTEM
 OUT_DATA             := $(OUT_TARGET_DIR)/DATA
 
+OUT_RECOVERY_FSTAB   := $(OUT_RECOVERY)/RAMDISK/etc/recovery.fstab
+
 OUT_SYSTEM_APP       := $(OUT_SYSTEM)/app
 OUT_SYSTEM_FRAMEWORK := $(OUT_SYSTEM)/framework
 OUT_SYSTEM_LIB       := $(OUT_SYSTEM)/lib
@@ -168,8 +189,7 @@ OUT_SYSTEM_BIN       := $(OUT_SYSTEM)/bin
 OUT_BUILD_PROP       := $(OUT_SYSTEM)/build.prop
 
 ################ refernce ######################
-REFERENCE_DIR        := $(PORT_ROOT)/reference
-REFERENCE_BAIDU_BASE := $(REFERENCE_DIR)/baidu_base
+BAIDU_RELEASE := $(PORT_ROOT)/baidu/release
 
 ################# target-files zips #######################
 PRJ_OUT_TARGET_ZIP := $(OUT_DIR)/target-files.zip
@@ -222,13 +242,16 @@ OUT_ODEX_META      := $(OUT_ODEX_DIR)/META
 # the dalvik vm build version
 # which will be used for preodex
 DEFAULT_DALVIK_VM_BUILD := 27
-DEXOPT_LIBS             := $(PORT_ROOT)/tools/lib
+DEXOPT_LIBS             := $(PORT_ROOT)/build/lib
 ################## target for server ######################
-PRJ_FULL_OTA_ZIP            := $(OUT_DIR)/ota-full_$(PRJ_NAME).zip
 PRJ_TARGET_FILE_ODEX        := $(OUT_DIR)/target_files.zip.odex.zip
 
 PRJ_SIGNED_TARGET_FILE      := $(OUT_DIR)/$(PRJ_NAME)-target-file-signed.zip
 PRJ_SIGNED_IMAGES           := $(OUT_DIR)/signed-images.zip
+
+PRJ_OUT_SERVER              := $(OUT_DIR)/server
+PRJ_OUT_SERVER_IMAGES       := $(PRJ_OUT_SERVER)/image
+PRJ_OUT_SERVER_OTA          := $(PRJ_OUT_SERVER)/ota
 
 ########################## init ###########################
 FRAMEWORK_RES_SOURCE := 
@@ -251,11 +274,16 @@ endif
 ###################### build.prop #########################
 VENDOR_BUILD_PROP       := $(VENDOR_SYSTEM)/build.prop
 
+############### tools in path ###############
+AAPT           := aapt
+ZIPALIGN       := zipalign
+
+
 ############### tools in $(PORT_BUILD)/tools ###############
-PORT_BUILD_TOOLS   := $(PORT_BUILD)/tools
-GET_PACKAGE        := $(PORT_BUILD_TOOLS)/getpackage.sh
-GET_PUBLIC_XML     := $(PORT_BUILD_TOOLS)/getPublicXml.sh
-INSTALL_FRAMEWORKS := $(PORT_BUILD_TOOLS)/ifdir.sh
+PORT_BUILD_TOOLS         := $(PORT_BUILD)/tools
+GET_PACKAGE              := $(PORT_BUILD_TOOLS)/getpackage.sh
+GET_PUBLIC_XML           := $(PORT_BUILD_TOOLS)/getPublicXml.sh
+INSTALL_FRAMEWORKS       := $(PORT_BUILD_TOOLS)/ifdir.sh
 
 MAKE_BUILD_PROP          := $(PORT_BUILD_TOOLS)/make_build_prop.sh
 PART_SMALI_APPEND        := $(PORT_BUILD_TOOLS)/partSmaliAppend.sh
@@ -264,39 +292,40 @@ UPDATE_FILE_SYSTEM       := $(PORT_BUILD_TOOLS)/UpdateFilesystem.py
 
 UPDATE_APKTOOL_YML_TOOLS := $(PORT_BUILD_TOOLS)/update_apktool_yml.sh
 DIFFMAP_TOOL             := $(PORT_BUILD_TOOLS)/diffmap.sh
+MODIFY_ID_TOOL           := $(PORT_BUILD_TOOLS)/modifyID.py
 
-############### tools in $(PORT_ROOT)/tools ###############
-PORT_TOOLS     := $(PORT_ROOT)/tools
-APKTOOL        := $(PORT_TOOLS)/apktool
-AAPT           := $(PORT_TOOLS)/aapt
+RECOVER_LINK             := $(PORT_BUILD_TOOLS)/releasetools/recoverylink.py
+OTA_FROM_TARGET_FILES    := $(PORT_BUILD_TOOLS)/releasetools/ota_from_target_files
+IMG_FROM_TARGET_FILES    := $(PORT_BUILD_TOOLS)/releasetools/img_from_target_files
+SIGN_TARGET_FILES_APKS   := $(PORT_BUILD_TOOLS)/releasetools/sign_target_files_apks
+NON_MTK_WRITE_RAW_IMAGE	 := $(PORT_BUILD_TOOLS)/releasetools/non_mtk_writeRawImage.py
 
-DEODEX		:= $(PORT_TOOLS)/deodex.sh
-SIGN_TOOL   := $(PORT_TOOLS)/sign.sh
-SIGN_JAR    := $(PORT_TOOLS)/signapk.jar
-TESTKEY_PEM := $(PORT_TOOLS)/security/testkey.x509.pem
-TESTKEY_PK  := $(PORT_TOOLS)/security/testkey.pk8
+DEX_OPT                  := $(PORT_BUILD_TOOLS)/dexopt
+DEX_PRE_OPT              := $(PORT_BUILD_TOOLS)/dex-preopt
+SIGN_JAR                 := $(PORT_BUILD_TOOLS)/signapk.jar
+SIGN_TOOL                := $(PORT_BUILD_TOOLS)/sign.sh
 
+PORT_CUSTOM_APP          := $(PORT_BUILD_TOOLS)/custom_app.sh
+PORT_CUSTOM_JAR          := $(PORT_BUILD_TOOLS)/custom_jar.sh
+PORT_CUSTOM_BAIDU_ZIP    := $(PORT_BUILD_TOOLS)/custom_baidu_zip.sh
+
+TESTKEY_PEM := $(PORT_BUILD)/security/testkey.x509.pem
+TESTKEY_PK  := $(PORT_BUILD)/security/testkey.pk8
 # CERTS_PATH only for generate the apkcerts.txt
-CERTS_PATH  := tools/security
+CERTS_PATH  := build/security
 OTA_CERT := $(PORT_ROOT)/$(CERTS_PATH)/testkey
 
-MODIFY_ID_TOOL           := $(PORT_TOOLS)/modifyID.py
-NAME_TO_ID_TOOL          := $(PORT_TOOLS)/nametoid.py
-ID_TO_NAME_TOOL          := $(PORT_TOOLS)/idtoname.py
-ZIPALIGN                 := $(PORT_TOOLS)/zipalign
 
-RECOVER_LINK             := $(PORT_TOOLS)/releasetools/recoverylink.py
-OTA_FROM_TARGET_FILES    := $(PORT_TOOLS)/releasetools/ota_from_target_files
-IMG_FROM_TARGET_FILES    := $(PORT_TOOLS)/releasetools/img_from_target_files
-SIGN_TARGET_FILES_APKS   := $(PORT_TOOLS)/releasetools/sign_target_files_apks
+############### tools in $(PORT_ROOT)/tools ###############
+PORT_TOOLS      := $(PORT_ROOT)/tools
+APKTOOL         := $(PORT_TOOLS)/apktool
+DEODEX		    := $(PORT_TOOLS)/deodex
 
-NON_MTK_WRITE_RAW_IMAGE	 :=$(PORT_TOOLS)/releasetools/non_mtk_writeRawImage.py
+NAME_TO_ID_TOOL := $(PORT_TOOLS)/nametoid
+ID_TO_NAME_TOOL := $(PORT_TOOLS)/idtoname
 
-DEX_OPT                  := $(PORT_TOOLS)/dexopt
-DEX_PRE_OPT              := $(PORT_TOOLS)/dex-preopt
-
-SCHECK                   := $(PORT_TOOLS)/smaliparser/SCheck
-AUTOFIX_TOOL             := python $(PORT_TOOLS)/smaliparser/reject.py
+SCHECK          := $(PORT_TOOLS)/smaliparser/SCheck
+AUTOFIX_TOOL    := python $(PORT_TOOLS)/smaliparser/reject.py
 
 ################### tools for project ####################
 PRJ_CUSTOM_TARGETFILES := $(PRJ_ROOT)/custom_targetfiles.sh

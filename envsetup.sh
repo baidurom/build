@@ -24,7 +24,7 @@ if [ -n "$PORT_ROOT" ]; then
     MATCH=$(echo $PATH | grep $PORT_ROOT)
     if [ "$MATCH" = "" ];then
 		PATH=$PORT_ROOT/tools:$PATH
-		LD_LIBRARY_PATH=$PORT_ROOT/tools/lib/:$LD_LIBRARY_PATH
+		LD_LIBRARY_PATH=$PORT_ROOT/build/lib/:$LD_LIBRARY_PATH
 	export PATH LD_LIBRARY_PATH
     fi
     PORT_BUILD="$PORT_ROOT/build"
@@ -32,9 +32,28 @@ if [ -n "$PORT_ROOT" ]; then
     export PORT_ROOT PORT_BUILD
 fi
 
+
+# Command "coron" complete
+function __cmd_coron()
+{
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case $COMP_CWORD in
+    0)
+      ;;
+    1)
+      local options="fire config patchall autofix fullota upgrade clean cleanall help"
+      COMPREPLY=( $(compgen -W "${options}" -- ${cur}) )
+      ;;
+    2)
+      ;;
+    esac
+}
+
+complete -F __cmd_coron coron
+
 function ifdir()
 {
-	$PORT_BUILD/tools/ifdir.sh $1
+    $PORT_BUILD/tools/ifdir.sh $1
 }
 
 function croot()
@@ -71,37 +90,14 @@ function c$projectName()
     rm -rf "$temp_info"
 }
 
-function pack_bootimg()
-{
-	$PORT_ROOT/tools/bootimgpack/pack_bootimg.py $@
-}
 
-function unpack_bootimg()
-{
-	$PORT_ROOT/tools/bootimgpack/unpack_bootimg.py $@
-}
-
-function num2name()
-{
-	$PORT_ROOT/tools/accessmethod/num2name.py $@
-}
-
-function name2num()
-{
-	$PORT_ROOT/tools/accessmethod/name2num.py $@
-}
-
-function updatebaidubase()
-{
-	$PORT_ROOT/tools/autopatch/baidu_base.sh $PORT_ROOT/baidu_base.zip
-}
 setupCdFunction
 
-if [ -f $PORT_BUILD/Makefile ]; then
-    cp $PORT_BUILD/Makefile $PORT_ROOT
+if [ -f $PORT_BUILD/custom/Makefile ]; then
+    cp $PORT_BUILD/custom/Makefile $PORT_ROOT
 fi
 
-SIMGTOIMG=$PORT_ROOT/tools/simg2img
+SIMGTOIMG=$PORT_BUILD/tools/bin/simg2img
 function unpack_systemimg()
 {
     local systemimg=$1
@@ -173,20 +169,11 @@ function imgtoota()
     fi
 }
 
-function makeconfig()
-{
-	makeConfigCmd=$PORT_BUILD/tools/makeconfig
-	if [ -x $makeConfigCmd  ]; then
-		$makeConfigCmd $@
-	else
-		echo "$makeConfigCmd doesn't exist or can not execute!"
-	fi
-}
 
 function otadiff()
 {
-    OTA_FROM_TARGET=$PORT_ROOT/tools/releasetools/ota_from_target_files
-    TEST_KEY=$PORT_ROOT/tools/security/testkey
+    OTA_FROM_TARGET=$PORT_BUILD/tools/releasetools/ota_from_target_files
+    TEST_KEY=$PORT_BUILD/security/testkey
     out_zip=$3
 
     if [ $# -lt 2 ]; then
@@ -194,11 +181,76 @@ function otadiff()
         echo "       pre-target-files.zip: the previous target files"
         echo "       target-files.zip: the current target files"
         echo "       [ota-diff.zip]: the ota update zip"
-        exit 1
+        return
     elif [ $# -eq 2 ]; then
         out_zip=ota-diff.zip
     fi
 
     $OTA_FROM_TARGET -k $TEST_KEY -i $1 $2 $3 $out_zip
     echo ">>> out: $out_zip"
+}
+
+
+SIGN_JAR="$PORT_BUILD/tools/signapk.jar"
+
+KEY_DIR="$PORT_BUILD/security"
+TESTKEY_PEM="$KEY_DIR/testkey.x509.pem"
+TESTKEY_PK="$KEY_DIR/testkey.pk8"
+
+function sign()
+{
+    apkName=$1
+
+    if [ $# = "0" ];then
+        echo ">>> usage: sign XXX.apk"
+        echo "           use testkey to sign XXX.apk"
+        return
+    fi
+
+    if [ ! -f $apkName ];then
+        echo ">>> $apkName doesn't exist!"
+        return
+    fi
+
+    echo ">>> use \"testkey\" to sign $apkName"
+    rm -rf $apkName.signed $apkName.signed.aligned
+
+    zip -d $apkName "META-INF/*" 2>&1 > /dev/null
+    java -jar $SIGN_JAR $TESTKEY_PEM $TESTKEY_PK $apkName $apkName.signed
+    echo ">>> signed out: $apkName.signed"
+
+    zipalign 4 $apkName.signed $apkName.signed.aligned
+    echo ">>> zipalign out: $apkName.signed.aligned"
+}
+
+function sign_key()
+{
+    keyType=$1
+    apkName=$2
+
+    if [ $# = "0" ];then
+        echo ">>> usage: sign_key platform/media/share/testkey/releasekey XXX.apk"
+        echo "           used to sign XXX.apk"
+        return
+    fi
+
+    if [ ! -f "$apkName" ];then
+        echo ">>> $apkName doesn't exist!"
+        return
+    fi
+
+    if [ ! -f "$KEY_DIR/$keyType.x509.pem" ] || [ ! -f "$KEY_DIR/$keyType.pk8" ];then
+        echo ">>> \"$keyType\" key doesn't exist!"
+        return
+    fi
+
+    echo ">>> use \"$keyType\" to sign $apkName"
+    rm -rf $apkName.signed $apkName.signed.aligned
+
+    zip -d $apkName "META-INF/*" 2>&1 > /dev/null
+    java -jar $SIGN_JAR "$KEY_DIR/$keyType.x509.pem" "$KEY_DIR/$keyType.pk8" $apkName $apkName.signed
+    echo ">>> signed out: $apkName.signed"
+
+    zipalign 4 $apkName.signed $apkName.signed.aligned
+    echo ">>> zipalign out: $apkName.signed.aligned"
 }

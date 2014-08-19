@@ -66,7 +66,7 @@ VERSION_NUMBER := $(shell echo $(BASE_VERSION_NUMBER) \
 endif #ifneq ($(strip $(BASE_VERSION_NUMBER)),)
 endif #ifeq ($(strip $(ROM_OFFICIAL_VERSION)),)
 
-$(info # VERSION_NUMBER: $(VERSION_NUMBER))
+#$(info # VERSION_NUMBER: $(VERSION_NUMBER))
 
 build_prop $(OUT_SYSTEM)/build.prop: $(OUT_OBJ_SYSTEM)/baidu.build.prop
 build_prop $(OUT_SYSTEM)/build.prop: $(VENDOR_BUILD_PROP)

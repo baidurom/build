@@ -1,4 +1,5 @@
 # defines.mk
+
 ifeq ($(strip $(SHOW_COMMANDS)),)
 hide := @
 else
@@ -100,6 +101,49 @@ define name_to_id
 $(NAME_TO_ID_TOOL) $(MERGED_PUBLIC_XML) $(1) 1>/dev/null
 endef
 
+# used to merged resource for apk
+# only used for baidu_modify_apps
+define aapt_overlay_apk
+if [ "x$(3)" != "x" ] && [ -d $(3)/res ]; then app_res="$$$$app_res -S $(3)/res"; fi; \
+if [ "x$(2)" != "x" ] && [ -d $(2)/res ]; then app_res="$$$$app_res -S $(2)/res"; fi; \
+if [ "x$(1)" != "x" ] && [ -d $(1)/res ]; then app_res="$$$$app_res -S $(1)/res"; fi; \
+if [ -d $(1)/assets ]; then app_assests="$$$$app_assests -A $(1)/assets"; fi; \
+minSdkVersion=`$(call getMinSdkVersionFromApktoolYmlFD,$(1)/apktool.yml)`; \
+targetSdkVersion=`$(call getTargetSdkVersionFromApktoolYmlFD,$(1)/apktool.yml)`;\
+$(AAPT) package -u -z $(call get_merged_installed_framework_params) \
+	$(if $(filter true,$(FULL_RES)),,$(addprefix -c , $(PRIVATE_PRODUCT_AAPT_CONFIG)) \
+									$(addprefix --preferred-configurations , $(PRIVATE_PRODUCT_AAPT_PREF_CONFIG))) \
+	$(if $$$$minSdkVersion,$(addprefix --min-sdk-version , $$$$minSdkVersion),) \
+	$(if $$$$targetSdkVersion,$(addprefix --target-sdk-version , $$$$targetSdkVersion),) \
+	-M $(1)/AndroidManifest.xml \
+	$$$$app_assests \
+	$$$$app_res \
+	-F $(1).tmp.apk \
+	1>/dev/null || exit $?; \
+$(APKTOOL) d -t $(APKTOOL_MERGED_TAG) -f $(1).tmp.apk $(1).tmp; \
+rm -r $(1)/res && cp -r $(1).tmp/res $(1); \
+rm -rf $(1).tmp.apk $(1).tmp
+endef
+
+define aapt_build_baidu_apk
+$(2): tempSmaliDir  := $(shell mktemp -u $(OUT_OBJ_APP)/$(call getBaseName,$(1)).aapt.XXX)
+$(2): apkName := $(call change_bracket,$(notdir $(1)))
+$(2): $(OUT_OBJ_META)/apkcerts.txt
+$(2): $(IF_BAIDU_RES)
+$(2): $(1)
+	$(hide) mkdir -p `dirname $(2)`
+	$(hide) if [ "x`grep "\\"$$(apkName)\\"" $(OUT_OBJ_META)/apkcerts.txt | grep "\\"PRESIGNED\\""`" = "x" ]; then \
+				rm -rf $$(tempSmaliDir); \
+				$(APKTOOL) d -t $(APKTOOL_BAIDU_TAG) $(1) $$(tempSmaliDir); \
+				$(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_MERGED_TAG)); \
+				$(call aapt_overlay_apk,$$(tempSmaliDir)); \
+				$(APKTOOL) b $$(tempSmaliDir) $$@; \
+				rm -rf $$(tempSmaliDir); \
+			else \
+				cp $(1) $(2); \
+			fi;
+endef
+
 # sign the apk with testkey
 define sign_apk_testkey
 $(eval $(2)_apkBaseName := $(call getBaseName, $(2)))
@@ -174,7 +218,7 @@ $(2): $(1) $(VENDOR_METAINF)
 	$(hide) cd $$(tempJarDir) && jar xf $$(jarBaseName);
 	$(hide) mv $$(tempJarDir)/classes.dex $$(tempJarDir)/Jar; 
 	$(hide) if [ $$(jarBaseName) != "framework.jar" ];then \
-				rm -rf $$(tempJarDir)/Jar/preloaded-classes; \
+				rm -rf $$(tempJarDir)/Jar/preloaded-classes*; \
 			fi; 
 	$(hide) cd $$(tempJarDir) && jar cf $$(jarBaseName) -C Jar/ . ; 
 	$(hide) mv $$(tempJarDir)/$$(jarBaseName) $(2);
@@ -192,6 +236,7 @@ endef
 # include framework resource apk
 # it would be called when build a apk
 define custom_app
+if [ -f $(PORT_CUSTOM_APP) ]; then $(PORT_CUSTOM_APP) $(1) $(2); fi; \
 if [ -f $(PRJ_CUSTOM_APP) ]; then $(PRJ_CUSTOM_APP) $(1) $(2); fi
 endef
 
@@ -218,6 +263,9 @@ ifneq ($(strip $(baidu_prebuilt_package)),)
 	$(hide) $(foreach package,$(baidu_prebuilt_package),\
 			$(call safe_dir_copy,$(3)/smali/$(package),$(4)/smali/$(package)))
 endif
+	$(hide) if [ -f $(PORT_CUSTOM_JAR) ];then \
+				$(PORT_CUSTOM_JAR) $(1) $(4); \
+			fi
 	$(hide) if [ -f $(PRJ_CUSTOM_JAR) ];then \
 				$(PRJ_CUSTOM_JAR) $(1) $(4); \
 			fi
@@ -252,29 +300,6 @@ define custom_post
 	fi
 endef
 
-# used to merged resource for apk
-# only used for baidu_modify_apps
-define aapt_overlay_apk
-if [ -d $(2)/assets ]; then \
-	$(AAPT) package -u -z $(call get_merged_installed_framework_params) \
-		-M $(2)/AndroidManifest.xml \
-		-A $(2)/assets \
-		-S $(1)/res \
-		-S $(2)/res \
-		-F $(2).tmp.apk \
-		1>/dev/null || exit $?; \
-else \
-	$(AAPT) package -u -z $(call get_merged_installed_framework_params) \
-		-M $(2)/AndroidManifest.xml \
-		-S $(1)/res \
-		-S $(2)/res \
-		-F $(2).tmp.apk \
-		1>/dev/null || exit $?; fi; \
-$(APKTOOL) d -t $(APKTOOL_MERGED_TAG) -f $(2).tmp.apk $(2).tmp; \
-rm -r $(2)/res && cp -r $(2).tmp/res $(2); \
-rm -rf $(2).tmp.apk $(2).tmp
-endef
-
 # used to append .smali.part
 # only used for baidu_modify_apps, baidu_modify_jars
 define part_smali_append
@@ -307,9 +332,9 @@ $(OUT_OBJ_SYSTEM)/$(2): $(BAIDU_SYSTEM)/$(2) $(MERGE_UPDATE_TXT) $(IF_ALL_RES) $
 	$(hide) if [ ! -d `dirname $(OUT_OBJ_SYSTEM)/$(2)` ]; then \
 				mkdir -p `dirname $(OUT_OBJ_SYSTEM)/$(2)`; \
 			fi;
-	$(hide) if [ -d $(1)/res ];then \
-				$(call aapt_overlay_apk,$(1),$$(tempSmaliDir)); \
-			fi
+	$(hide) if [ -d $(1)/res ]; then \
+				$(call aapt_overlay_apk,$$(tempSmaliDir),$(1)); \
+			fi;
 	$(hide) $(APKTOOL) b $$(tempSmaliDir) $(OUT_OBJ_SYSTEM)/$(2);
 	$(hide) rm -rf "$$(tempSmaliDir)";
 	$(hide) echo ">>> Build out ==> $(OUT_OBJ_SYSTEM)/$(2)"
@@ -435,21 +460,16 @@ $(2): $(1)
 	$(hide) cp $(1) $(2);
 endef
 
+
 # update the resouce id in $(BAIDU_UPDATE_RES_APPS)
 define baidu_update_template
-ifeq ($(strip $(filter %.jar,$(1))),)
-    SIGN_APPS += $(OUT_OBJ_SYSTEM)/$(1):$(OUT_SYSTEM)/$(1)
-else
-    SIGN_JARS += $(OUT_OBJ_SYSTEM)/$(1):$(OUT_SYSTEM)/$(1)
-endif
-
 $(OUT_OBJ_SYSTEM)/$(1): apkBaseName  := $(call getBaseName, $(1))
 $(OUT_OBJ_SYSTEM)/$(1): tempSmaliDir := $(shell mktemp -u $(OUT_OBJ_APP)/$(call getBaseName, $(1)).XXX)
-$(OUT_OBJ_SYSTEM)/$(1): $(BAIDU_SYSTEM)/$(1) $(MERGE_UPDATE_TXT) $(IF_ALL_RES)
+$(OUT_OBJ_SYSTEM)/$(1): $(AAPT_BUILD_TARGET) $(MERGE_UPDATE_TXT) $(IF_ALL_RES)
 	$(hide) echo ">>> update the resouce id: $(BAIDU_SYSTEM)/$(1)"
 	$(hide) rm -rf "$$(tempSmaliDir)"
 	$(hide) mkdir -p "$$(tempSmaliDir)"
-	$(hide) $(APKTOOL) d -f -t $(APKTOOL_BAIDU_TAG) $(BAIDU_SYSTEM)/$(1) $$(tempSmaliDir) 2>/dev/null;
+	$(hide) $(APKTOOL) d -f -t $(APKTOOL_BAIDU_TAG) $(AAPT_BUILD_TARGET) $$(tempSmaliDir) 2>/dev/null;
 	$(hide) $(call custom_app,$$(apkBaseName),$$(tempSmaliDir))
 	$(hide) $(call modify_res_id,$$(tempSmaliDir))
 	$(hide) $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_MERGED_TAG))
