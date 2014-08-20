@@ -595,6 +595,7 @@ PRJ_FULL_OTA_ZIP := $(OUT_DIR)/ota-$(VERSION_NUMBER).zip
 endif
 
 $(PRJ_FULL_OTA_ZIP): $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
+	$(hide) echo $(PRJ_FULL_OTA_ZIP) > $(PRJ_SAVED_OTA_NAME)
 	$(hide) $(OTA_FROM_TARGET_FILES) \
 			$(FORMAT_PARAM) \
 			$(SIGN_OTA_PARAM) \
@@ -635,7 +636,7 @@ endif
 
 ############## add prepare_source ######################
 $(BAIDU_SYSTEM)/%: $(PREPARE_SOURCE)
-#	@echo ">>> prepare $@ done"
+	@echo ">>> prepare $@ done"
 
 ################### clean ##############################
 .PHONY: clean
