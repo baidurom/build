@@ -186,7 +186,7 @@ function otadiff()
         out_zip=ota-diff.zip
     fi
 
-    $OTA_FROM_TARGET -k $TEST_KEY -i $1 $2 $3 $out_zip
+    $OTA_FROM_TARGET -k $TEST_KEY -i $1 $2 $out_zip
     echo ">>> out: $out_zip"
 }
 
