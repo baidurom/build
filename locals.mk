@@ -91,6 +91,10 @@ PRIVATE_PRODUCT_AAPT_CONFIG := $(subst $(space),$(comma),$(sort normal,nodpi,$(P
 
 PRIVATE_PRODUCT_AAPT_PREF_CONFIG := $(DENSITY)
 
+ifeq ($(ALL_FRW_NAME_TO_ID),)
+ALL_FRW_NAME_TO_ID := true
+endif
+
 ##################### baidu zip ###########################
 BAIDU_DIR          := $(PRJ_ROOT)/baidu
 BAIDU_ZIP          := $(BAIDU_DIR)/baidu.zip
@@ -144,6 +148,11 @@ MERGE_UPDATE_TXT := $(OUT_OBJ_RES)/merge_update.txt
 IF_BAIDU_RES	:= $(OUT_OBJ_FRAMEWORK)/ifbaidu
 IF_VENDOR_RES	:= $(OUT_OBJ_FRAMEWORK)/ifvendor
 IF_MERGED_RES	:= $(OUT_OBJ_FRAMEWORK)/ifmerged
+
+IF_ALL_RES		:= $(IF_BAIDU_RES) $(IF_VENDOR_RES) $(IF_MERGED_RES)
+
+FRW_RES_DECODE      := $(OUT_OBJ_RES)/frw_res_decode
+PREPARE_FRW_RES_JOB := $(FRW_RES_DECODE)/.done
 
 OUT_OBJ_AUTOCOM       := $(OUT_OBJ_DIR)/autocom
 AUTOCOM_BAIDU         := $(OUT_OBJ_AUTOCOM)/baidu

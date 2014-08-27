@@ -163,7 +163,6 @@ FRAMEWORK_APKS_TARGETS := $(patsubst %,$(OUT_SYSTEM)/%,\
         framework/framework-res-yi.apk \
         $(ALL_VENDOR_FILES)))))
 
-IF_ALL_RES		:= $(IF_BAIDU_RES) $(IF_VENDOR_RES) $(IF_MERGED_RES)
 $(BAIDU_FRAMEWORK_APKS): $(PREPARE_SOURCE)
 
 $(IF_BAIDU_RES): $(BAIDU_FRAMEWORK_APKS) $(PREPARE_SOURCE)
@@ -181,6 +180,37 @@ $(IF_VENDOR_RES): $(VENDOR_FRAMEWORK_APKS)
 $(IF_MERGED_RES): $(FRAMEWORK_APKS_TARGETS)
 	$(hide) $(call apktool_if_merged,$(OUT_SYSTEM_FRAMEWORK))
 	$(hide) echo ">>> apktool if merged framework res done"
+	$(hide) mkdir -p `dirname $@`
+	$(hide) touch $@
+
+ifeq ($(ALL_FRW_NAME_TO_ID),true)
+PREPARE_FRW_APKS := $(FRAMEWORK_APKS_TARGETS)
+else
+PREPARE_FRW_APKS := $(OUT_SYSTEM_FRAMEWORK)/framework-res.apk
+endif
+
+ifeq ($(strip $(NOT_CUSTOM_FRAMEWORK-RES)),true)
+PREPARE_FRW_APKS := $(filter-out %/framework-res.apk,$(PREPARE_FRW_APKS))
+endif
+
+$(foreach frw_res,$(PREPARE_FRW_APKS),\
+	$(eval targetDir := $(FRW_RES_DECODE)/$(call getBaseName,$(frw_res))) \
+	$(eval $(call decode_merged,$(frw_res),$(targetDir))) \
+	$(eval PREPARE_FRW_RES_TARGET += $(targetDir)/apktool.yml))
+
+ifeq ($(strip $(PREPARE_FRW_APKS)),)
+$(FRW_RES_DECODE)/framework-res/res/values/public.xml: $(MERGED_PUBLIC_XML)
+	$(hide) mkdir -p `dirname $@`
+	$(hide) cp $(VENDOR_FRAMEWORK_RES_OUT)/AndroidManifest.xml $(FRW_RES_DECODE)/framework-res/AndroidManifest.xml
+	$(hide) cp $< $@
+
+PREPARE_FRW_RES_TARGET += $(FRW_RES_DECODE)/framework-res/res/values/public.xml
+endif
+
+.IGNORE: $(PREPARE_FRW_RES_TARGET)
+
+$(PREPARE_FRW_RES_JOB): $(PREPARE_FRW_RES_TARGET)
+$(PREPARE_FRW_RES_JOB):
 	$(hide) mkdir -p `dirname $@`
 	$(hide) touch $@
 

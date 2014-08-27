@@ -98,7 +98,13 @@ endef
 
 # change the #type@name#t to resouce id
 define name_to_id
-$(NAME_TO_ID_TOOL) $(MERGED_PUBLIC_XML) $(1) 1>/dev/null
+for publicXMl in `find $(FRW_RES_DECODE) -name "public.xml"`; \
+do \
+$(NAME_TO_ID_TOOL) $$$$publicXMl $(1) > /dev/null; \
+done; \
+if [ -f $(1)/res/values/public.xml ]; then \
+$(NAME_TO_ID_TOOL) $(1)/res/values/public.xml $(1) > /dev/null; \
+fi
 endef
 
 # used to merged resource for apk
@@ -316,7 +322,7 @@ $(OUT_OBJ_SYSTEM)/$(2): apkBaseName   := $(call getBaseName, $(2))
 $(OUT_OBJ_SYSTEM)/$(2): needUpdateRes := $(shell echo $(BAIDU_UPDATE_RES_APPS) | grep "$(2)" -o)
 $(OUT_OBJ_SYSTEM)/$(2): tempSmaliDir  := $(shell mktemp -u $(OUT_OBJ_APP)/$(call getBaseName, $(2)).XXX)
 
-$(OUT_OBJ_SYSTEM)/$(2): $(BAIDU_SYSTEM)/$(2) $(MERGE_UPDATE_TXT) $(IF_ALL_RES) $$($(call getBaseName, $(2))_bm_apk_sources)
+$(OUT_OBJ_SYSTEM)/$(2): $(BAIDU_SYSTEM)/$(2) $(MERGE_UPDATE_TXT) $(PREPARE_FRW_RES_JOB) $(IF_ALL_RES) $$($(call getBaseName, $(2))_bm_apk_sources)
 	$(hide) echo ">>> build baidu modify apk from $(1) to $(OUT_OBJ_SYSTEM)/$(2), tempSmaliDir:$$(tempSmaliDir)"
 	$(hide) rm -rf "$$(tempSmaliDir)"
 	$(hide) mkdir -p $(OUT_OBJ_APP)
@@ -326,7 +332,6 @@ $(OUT_OBJ_SYSTEM)/$(2): $(BAIDU_SYSTEM)/$(2) $(MERGE_UPDATE_TXT) $(IF_ALL_RES) $
 			else \
 				echo ">>> $$(tempSmaliDir) not need to update res id"; \
 			fi;
-	$(hide) $(call custom_app,$$(apkBaseName),$$(tempSmaliDir));
 	$(hide) $(call part_smali_append,$(1)/smali,$$(tempSmaliDir)/smali);
 	$(hide) $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_MERGED_TAG));
 	$(hide) if [ ! -d `dirname $(OUT_OBJ_SYSTEM)/$(2)` ]; then \
@@ -335,6 +340,8 @@ $(OUT_OBJ_SYSTEM)/$(2): $(BAIDU_SYSTEM)/$(2) $(MERGE_UPDATE_TXT) $(IF_ALL_RES) $
 	$(hide) if [ -d $(1)/res ]; then \
 				$(call aapt_overlay_apk,$$(tempSmaliDir),$(1)); \
 			fi;
+	$(hide) $(call custom_app,$$(apkBaseName),$$(tempSmaliDir));
+	$(hide) $(call name_to_id,$$(tempSmaliDir))
 	$(hide) $(APKTOOL) b $$(tempSmaliDir) $(OUT_OBJ_SYSTEM)/$(2);
 	$(hide) rm -rf "$$(tempSmaliDir)";
 	$(hide) echo ">>> Build out ==> $(OUT_OBJ_SYSTEM)/$(2)"
@@ -348,7 +355,7 @@ $(call getBaseName, $(2))_vm_apk_sources := $(sort $(call get_all_smali_files_in
 $(OUT_OBJ_SYSTEM)/$(2): apkBaseName  := $(call getBaseName, $(2))
 $(OUT_OBJ_SYSTEM)/$(2): tempSmaliDir := $(shell mktemp -u $(OUT_OBJ_APP)/$(call getBaseName, $(2)).XXX)
 
-$(OUT_OBJ_SYSTEM)/$(2): $(MERGED_PUBLIC_XML) $(IF_ALL_RES) $$($(call getBaseName, $(2))_vm_apk_sources)
+$(OUT_OBJ_SYSTEM)/$(2): $(PREPARE_FRW_RES_JOB) $(IF_ALL_RES) $$($(call getBaseName, $(2))_vm_apk_sources)
 	$(hide) echo ">>> build apk $(1) to $(OUT_OBJ_SYSTEM)/$(2)"
 	$(hide) mkdir -p $(OUT_OBJ_APP)
 	$(hide) rm -rf $$(tempSmaliDir)
@@ -412,14 +419,15 @@ $(call getBaseName, $(2))_bm_jar_sources := $(sort $(call get_all_smali_files_in
 $(OUT_OBJ_SYSTEM)/$(2): jarBaseName  := $(call getBaseName, $(2))
 $(OUT_OBJ_SYSTEM)/$(2): tempSmaliDir := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/$(call getBaseName, $(2)).XXX)
 
-$(OUT_OBJ_SYSTEM)/$(2): $(BAIDU_SYSTEM)/$(2) $(MERGE_UPDATE_TXT) $(IF_ALL_RES) $$($(call getBaseName, $(2))_bm_jar_sources)
+$(OUT_OBJ_SYSTEM)/$(2): $(BAIDU_SYSTEM)/$(2) $(MERGE_UPDATE_TXT) $(PREPARE_FRW_RES_JOB) $(IF_ALL_RES) $$($(call getBaseName, $(2))_bm_jar_sources)
 	$(hide) echo ">>> build baidu modify jar: $(1) to $$@, tempSmaliDir:$$(tempSmaliDir)"
 	$(hide) rm -rf "$$(tempSmaliDir)"
 	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK)
 	$(hide) $(APKTOOL) d -t $(APKTOOL_BAIDU_TAG) $(BAIDU_SYSTEM)/$(2) $$(tempSmaliDir)
 	$(hide) $(call modify_res_id,$$(tempSmaliDir))
-	$(hide) $(call custom_jar,$$(jarBaseName),$$(tempSmaliDir))
 	$(hide) $(call part_smali_append,$(1)/smali,$$(tempSmaliDir)/smali);
+	$(hide) $(call custom_jar,$$(jarBaseName),$$(tempSmaliDir))
+	$(hide) $(call name_to_id,$$(tempSmaliDir))
 	$(hide) $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_MERGED_TAG));
 	$(hide) mkdir -p $(OUT_OBJ_SYSTEM)
 	$(hide) $(APKTOOL) b $$(tempSmaliDir) $$@;
@@ -436,7 +444,7 @@ $(OUT_OBJ_SYSTEM)/$(2): jarBaseName   := $(call getBaseName, $(2))
 $(OUT_OBJ_SYSTEM)/$(2): baiduSmaliDir := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/$(call getBaseName, $(2)).baidu.XXX)
 $(OUT_OBJ_SYSTEM)/$(2): tempSmaliDir  := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/$(call getBaseName, $(2)).XXX)
 
-$(OUT_OBJ_SYSTEM)/$(2): $(MERGED_PUBLIC_XML) $(MERGED_TXTS) $(IF_ALL_RES) $$($(call getBaseName, $(2))_vm_jar_sources)
+$(OUT_OBJ_SYSTEM)/$(2): $(PREPARE_FRW_RES_JOB) $(MERGED_TXTS) $(IF_ALL_RES) $$($(call getBaseName, $(2))_vm_jar_sources)
 	$(hide) echo ">>> build vendor modify jar: $(1) to $$@";
 	$(hide) rm -rf $$(tempSmaliDir);
 	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK)
@@ -465,13 +473,14 @@ endef
 define baidu_update_template
 $(OUT_OBJ_SYSTEM)/$(1): apkBaseName  := $(call getBaseName, $(1))
 $(OUT_OBJ_SYSTEM)/$(1): tempSmaliDir := $(shell mktemp -u $(OUT_OBJ_APP)/$(call getBaseName, $(1)).XXX)
-$(OUT_OBJ_SYSTEM)/$(1): $(AAPT_BUILD_TARGET) $(MERGE_UPDATE_TXT) $(IF_ALL_RES)
+$(OUT_OBJ_SYSTEM)/$(1): $(AAPT_BUILD_TARGET) $(MERGE_UPDATE_TXT) $(IF_ALL_RES) $(PREPARE_FRW_RES_JOB)
 	$(hide) echo ">>> update the resouce id: $(BAIDU_SYSTEM)/$(1)"
 	$(hide) rm -rf "$$(tempSmaliDir)"
 	$(hide) mkdir -p "$$(tempSmaliDir)"
 	$(hide) $(APKTOOL) d -f -t $(APKTOOL_BAIDU_TAG) $(AAPT_BUILD_TARGET) $$(tempSmaliDir) 2>/dev/null;
 	$(hide) $(call custom_app,$$(apkBaseName),$$(tempSmaliDir))
 	$(hide) $(call modify_res_id,$$(tempSmaliDir))
+	$(hide) $(call name_to_id,$$(tempSmaliDir))
 	$(hide) $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_MERGED_TAG))
 	$(hide) mkdir -p `dirname $$@`
 	$(hide) $(APKTOOL) b $$(tempSmaliDir) $$@

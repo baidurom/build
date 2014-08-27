@@ -41,7 +41,7 @@ function __cmd_coron()
     0)
       ;;
     1)
-      local options="fire config patchall autofix fullota upgrade clean cleanall help"
+      local options="fire config newproject patchall autofix fullota upgrade clean cleanall help"
       COMPREPLY=( $(compgen -W "${options}" -- ${cur}) )
       ;;
     2)
