@@ -198,7 +198,7 @@ $(foreach frw_res,$(PREPARE_FRW_APKS),\
 	$(eval $(call decode_merged,$(frw_res),$(targetDir))) \
 	$(eval PREPARE_FRW_RES_TARGET += $(targetDir)/apktool.yml))
 
-ifeq ($(strip $(PREPARE_FRW_APKS)),)
+ifeq ($(strip $(filter %/framework-res.apk,$(PREPARE_FRW_APKS))),)
 $(FRW_RES_DECODE)/framework-res/res/values/public.xml: $(MERGED_PUBLIC_XML)
 	$(hide) mkdir -p `dirname $@`
 	$(hide) cp $(VENDOR_FRAMEWORK_RES_OUT)/AndroidManifest.xml $(FRW_RES_DECODE)/framework-res/AndroidManifest.xml
