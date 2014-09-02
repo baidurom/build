@@ -493,7 +493,7 @@ $(OUT_OBJ_META)/apkcerts.txt: $(BAIDU_META)/apkcerts.txt $(VENDOR_META)/apkcerts
 	$(hide) echo "    except: $(VENDOR_SIGN_APPS), CERTS_PATH:$(CERTS_PATH)";
 	$(hide) mkdir -p $(OUT_OBJ_META)
 	$(hide) cp $(BAIDU_META)/apkcerts.txt $(OUT_OBJ_DIR)/apkcerts.txt;
-	$(hide) egrep 'certificate="build/target/product/security|PRESIGNED' $(BAIDU_META)/apkcerts.txt \
+	$(hide) egrep 'certificate="build/target/product/security|$(CERTS_PATH)|PRESIGNED' $(BAIDU_META)/apkcerts.txt \
 				| sed 's#build/target/product/security#$(CERTS_PATH)#g'  \
 				> $(OUT_OBJ_DIR)/apkcerts.txt;
 	$(hide) echo ">>> USE_VENDOR_CERT_APPS:$(USE_VENDOR_CERT_APPS)"

@@ -264,10 +264,11 @@ define custom_jar_with_package_copy
 ifneq ($(strip $(baidu_prebuilt_package)),)
 	$(hide) echo ">>> begin copy baidu packages: \"$(baidu_prebuilt_package)\"\n \
 		\t\tfrom $(BAIDU_SYSTEM)/$(2) to $(4)"
-	$(hide) $(APKTOOL) d -f -t $(APKTOOL_BAIDU_TAG) $(BAIDU_SYSTEM)/$(2) $(3);
-	$(hide) $(MODIFY_ID_TOOL) $(MERGE_UPDATE_TXT) $(3)/smali;
-	$(hide) $(foreach package,$(baidu_prebuilt_package),\
-			$(call safe_dir_copy,$(3)/smali/$(package),$(4)/smali/$(package)))
+	$(hide) if [ -f $(BAIDU_SYSTEM)/$(2) ]; then \
+				$(APKTOOL) d -f -t $(APKTOOL_BAIDU_TAG) $(BAIDU_SYSTEM)/$(2) $(3); \
+				$(MODIFY_ID_TOOL) $(MERGE_UPDATE_TXT) $(3)/smali; \
+				$(foreach package,$(baidu_prebuilt_package),\
+					$(call safe_dir_copy,$(3)/smali/$(package),$(4)/smali/$(package))) fi;
 endif
 	$(hide) if [ -f $(PORT_CUSTOM_JAR) ];then \
 				$(PORT_CUSTOM_JAR) $(1) $(4); \

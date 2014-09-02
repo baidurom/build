@@ -44,6 +44,10 @@ ifeq ($(strip $(SIGN_OTA)),)
 SIGN_OTA := true
 endif
 
+ifeq ($(strip $(NO_SYSTEM_IMG)),)
+NO_SYSTEM_IMG := true
+endif
+
 ##################### density ############################
 ALL_DENSITY := \
      mdpi \

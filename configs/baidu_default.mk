@@ -65,8 +65,6 @@ BAIDU_PREBUILT += \
 	tts/lang_pico/es-ES_ta.bin \
 	tts/lang_pico/it-IT_ta.bin \
 	etc/defaultTheme.btp \
-	etc/localTheme01.btp \
-	etc/localTheme02.btp \
 	etc/water.btp \
 	etc/female.btp \
 	etc/security/otacerts.zip \
@@ -82,7 +80,6 @@ BAIDU_PREBUILT += \
 # the directory which need copy to target
 BAIDU_PREBUILT_DIRS += \
 	media/audio \
-	etc/localTheme01 \
 	etc/channel_files \
 	etc/defaultTheme \
 	etc/water \
@@ -293,6 +290,12 @@ BAIDU_PREBUILT_PACKAGE_services := \
 	yi
 
 BAIDU_PREBUILT_PACKAGE_framework := \
+	baidu \
+	com/baidu \
+	com/yi \
+	yi
+
+BAIDU_PREBUILT_PACKAGE_framework2 := \
 	baidu \
 	com/baidu \
 	com/yi \

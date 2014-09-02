@@ -17,35 +17,35 @@ AUTOPATCH_TOOL  := ${AUTOPATCH_DIR}/autopatch.py
 patchall:
 	@echo ""
 	@echo ">>> auto patch all ..."
-	$(hide) $(AUTOPATCH_TOOL) --patchall
+	$(hide) $(AUTOPATCH_TOOL) --patchall ${BASE}
 
 upgrade:
 	@echo ""
 	@echo ">>> upgrade ..."
-	$(hide) $(AUTOPATCH_TOOL) --upgrade
+	$(hide) $(AUTOPATCH_TOOL) --upgrade ${BASE}
 
 
-PORTING_USAGE="\n  Usage: porting MASTER=XX [COMMIT1=XX] [COMMIT2=XX]              " \
+PORTING_USAGE="\n  Usage: porting BASE=XX [COMMIT1=XX] [COMMIT2=XX]                     " \
               "\n                                                                       " \
-              "\n  - MASTER  the source device you porting from, it is like a master    " \
+              "\n  - BASE  the source device you porting from, it is like a base        " \
               "\n                                                                       " \
-              "\n  - COMMIT1 the 1st 7 bits SHA1 commit ID on MASTER                    " \
+              "\n  - COMMIT1 the 1st 7 bits SHA1 commit ID on BASE                      " \
               "\n                                                                       " \
-              "\n  - COMMIT2 the 2nd 7 bits SHA1 commit ID on MASTER                    " \
+              "\n  - COMMIT2 the 2nd 7 bits SHA1 commit ID on BASE                      " \
               "\n                                                                       " \
-              "\n    e.g. porting MASTER=base                                           " \
+              "\n    e.g. porting BASE=base                                             " \
               "\n         Porting commits from base interactively                       " \
               "\n                                                                       " \
-              "\n    e.g. porting MASTER=base COMMIT1=643a312                           " \
+              "\n    e.g. porting BASE=base COMMIT1=643a312                             " \
               "\n         Porting commits from COMMIT1 to the latest                    " \
               "\n                                                                       " \
-              "\n   Skill: Define MASTER in your Makefile, next time you could          " \
+              "\n   Skill: Define BASE in your Makefile, next time you could            " \
               "\n          use [make porting] directly, it is more effective.           " \
               "\n                                                                       " \
 
 # Porting commits from reference device
 porting:
-	$(hide) if [ -z $(MASTER) ]; then echo $(PORTING_USAGE); exit 1; fi
+	$(hide) if [ -z $(BASE) ]; then echo $(PORTING_USAGE); exit 1; fi
 	@echo ">>> Porting ..."
-	$(hide) $(AUTOPATCH_TOOL) --porting ${MASTER} ${COMMIT1} ${COMMIT2}
+	$(hide) $(AUTOPATCH_TOOL) --porting ${BASE} ${COMMIT1} ${COMMIT2}
 
