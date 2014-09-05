@@ -1,5 +1,12 @@
 #!/bin/bash
 
+ONLY_PART=false
+
+if [ $1 == "--onlypart" ]; then
+	ONLY_PART=true
+	shift
+fi
+
 PART_SMALI_DIR=$1
 DST_SMALI_DIR=$2
 
@@ -45,17 +52,21 @@ do
 	echo "        to $DSTFILE"
 done;
 
-for file in `find $PART_SMALI_DIR -type f -name "*.smali"`
-do
-	FILEPATH=${file##*/smali/};
-	PARTFILE=$PART_SMALI_DIR/$FILEPATH;
-	DSTFILE=$DST_SMALI_DIR/$FILEPATH
-	DSTDIR=`dirname $DSTFILE`
+if [ $ONLY_PART == false ]; then
+	for file in `find $PART_SMALI_DIR -type f -name "*.smali"`
+	do
+		FILEPATH=${file##*/smali/};
+		PARTFILE=$PART_SMALI_DIR/$FILEPATH;
+		DSTFILE=$DST_SMALI_DIR/$FILEPATH
+		DSTDIR=`dirname $DSTFILE`
 
-	if [ ! -d $DSTDIR ]; then
-		mkdir -p $DSTDIR
-	fi
+		if [ ! -d $DSTDIR ]; then
+			mkdir -p $DSTDIR
+		fi
 
-	cp $file $DSTFILE
-	echo "cp $PARTFILE to $DSTFILE"
-done;
+		cp $file $DSTFILE
+		echo "cp $PARTFILE to $DSTFILE"
+	done;
+fi
+
+find $DST_SMALI_DIR -type f -name "*.part" | xargs rm -f

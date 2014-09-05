@@ -256,33 +256,27 @@ define hasInternalResource
 -f "$(strip $(1))/$(FRWK_INTER_RES_POS)/R.smali"
 endef
 
-# custom jar and copy package define in BAIDU_PREBUILT_PACKAGE_xxx
-define custom_jar_with_package_copy
-	$(hide) if [ $(call hasInternalResource,$(4)) ];then \
-				$(call update_internal_resource,$(MERGE_ADD_TXT),$(4)/$(FRWK_INTER_RES_POS)); \
-			fi;
+# copy package define in BAIDU_PREBUILT_PACKAGE_xxx
+define copy_package
 ifneq ($(strip $(baidu_prebuilt_package)),)
 	$(hide) echo ">>> begin copy baidu packages: \"$(baidu_prebuilt_package)\"\n \
-		\t\tfrom $(BAIDU_SYSTEM)/$(2) to $(4)"
-	$(hide) if [ -f $(BAIDU_SYSTEM)/$(2) ]; then \
-				$(APKTOOL) d -f -t $(APKTOOL_BAIDU_TAG) $(BAIDU_SYSTEM)/$(2) $(3); \
-				$(MODIFY_ID_TOOL) $(MERGE_UPDATE_TXT) $(3)/smali; \
+		\t\tfrom $(BAIDU_SYSTEM)/$(1) to $(3)"
+	$(hide) if [ -f $(BAIDU_SYSTEM)/$(1) ]; then \
+				$(APKTOOL) d -f -t $(APKTOOL_BAIDU_TAG) $(BAIDU_SYSTEM)/$(1) $(2); \
+				$(call modify_res_id,$(2)/smali); \
 				$(foreach package,$(baidu_prebuilt_package),\
-					$(call safe_dir_copy,$(3)/smali/$(package),$(4)/smali/$(package))) fi;
+					$(call safe_dir_copy,$(2)/smali/$(package),$(3)/smali/$(package))) fi;
 endif
-	$(hide) if [ -f $(PORT_CUSTOM_JAR) ];then \
-				$(PORT_CUSTOM_JAR) $(1) $(4); \
-			fi
-	$(hide) if [ -f $(PRJ_CUSTOM_JAR) ];then \
-				$(PRJ_CUSTOM_JAR) $(1) $(4); \
-			fi
 endef
 
 # custom jar: call custom_app.sh in $(PRJ_ROOT)
 # it would be called when build a jar
 define custom_jar
-	$(hide) if [ $(call hasInternalResource,$(4)) ];then \
+	$(hide) if [ $(call hasInternalResource,$(2)) ];then \
 				$(call update_internal_resource,$(MERGE_ADD_TXT),$(2)/$(FRWK_INTER_RES_POS)); \
+			fi;
+	$(hide) if [ -f $(PORT_CUSTOM_JAR) ];then \
+				$(PORT_CUSTOM_JAR) $(1) $(2); \
 			fi;
 	$(hide) if [ -f $(PRJ_CUSTOM_JAR) ];then \
 				$(PRJ_CUSTOM_JAR) $(1) $(2); \
@@ -310,7 +304,7 @@ endef
 # used to append .smali.part
 # only used for baidu_modify_apps, baidu_modify_jars
 define part_smali_append
-$(PART_SMALI_APPEND) $(1) $(2)
+$(PART_SMALI_APPEND) $(1) $(2) $(3)
 endef
 
 # used to build baidu_modify_apps
@@ -354,13 +348,18 @@ SIGN_APPS += $(OUT_OBJ_SYSTEM)/$(2):$(OUT_SYSTEM)/$(2)
 $(call getBaseName, $(2))_vm_apk_sources := $(sort $(call get_all_smali_files_in_dir, $(1)))
 
 $(OUT_OBJ_SYSTEM)/$(2): apkBaseName  := $(call getBaseName, $(2))
+$(OUT_OBJ_SYSTEM)/$(2): baiduSmaliDir := $(shell mktemp -u $(OUT_OBJ_APP)/$(call getBaseName, $(2)).baidu.XXX)
 $(OUT_OBJ_SYSTEM)/$(2): tempSmaliDir := $(shell mktemp -u $(OUT_OBJ_APP)/$(call getBaseName, $(2)).XXX)
 
 $(OUT_OBJ_SYSTEM)/$(2): $(PREPARE_FRW_RES_JOB) $(IF_ALL_RES) $$($(call getBaseName, $(2))_vm_apk_sources)
 	$(hide) echo ">>> build apk $(1) to $(OUT_OBJ_SYSTEM)/$(2)"
-	$(hide) mkdir -p $(OUT_OBJ_APP)
 	$(hide) rm -rf $$(tempSmaliDir)
-	$(hide) cp -rf $(1) $$(tempSmaliDir)
+	$(hide) mkdir -p $$(tempSmaliDir)
+$(eval baidu_prebuilt_package:=$(strip $(BAIDU_PREBUILT_PACKAGE_$(apk))))
+$(call copy_package,$(2),$$(baiduSmaliDir),$$(tempSmaliDir))
+$(eval baidu_prebuilt_package:=)
+	$(hide) $(call dir_copy,$(1),$$(tempSmaliDir))
+	$(hide) $(call part_smali_append,--onlypart,$(1)/smali,$$(tempSmaliDir)/smali);
 	$(hide) $(call custom_app,$$(apkBaseName),$$(tempSmaliDir));
 	$(hide) $(call name_to_id,$$(tempSmaliDir));
 	$(hide) $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_MERGED_TAG));
@@ -395,7 +394,7 @@ $(OUT_OBJ_SYSTEM)/$(2): $(IF_VENDOR_RES) $$($(call getBaseName, $(2))_fk_sources
 	$(hide) echo ">>> build framework apk $(1) to $$@"
 	$(hide) rm -rf $$(tempSmaliDir)
 	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK)
-	$(hide) cp -rf $(1) $$(tempSmaliDir)
+	$(hide) $(call dir_copy,$(1),$$(tempSmaliDir))
 	$(hide) $(call custom_app,$$(apkBaseName),$$(tempSmaliDir));
 	$(hide) $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_VENDOR_TAG));
 	$(hide) mkdir -p `dirname $$@`
@@ -448,11 +447,13 @@ $(OUT_OBJ_SYSTEM)/$(2): tempSmaliDir  := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/
 $(OUT_OBJ_SYSTEM)/$(2): $(PREPARE_FRW_RES_JOB) $(MERGED_TXTS) $(IF_ALL_RES) $$($(call getBaseName, $(2))_vm_jar_sources)
 	$(hide) echo ">>> build vendor modify jar: $(1) to $$@";
 	$(hide) rm -rf $$(tempSmaliDir);
-	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK)
-	$(hide) cp -rf $(1) $$(tempSmaliDir);
+	$(hide) mkdir -p $$(tempSmaliDir)
 $(eval baidu_prebuilt_package:=$(strip $(BAIDU_PREBUILT_PACKAGE_$(jar))))
-$(call custom_jar_with_package_copy,$$(jarBaseName),$(2),$$(baiduSmaliDir),$$(tempSmaliDir))
+$(call copy_package,$(2),$$(baiduSmaliDir),$$(tempSmaliDir))
 $(eval baidu_prebuilt_package:=)
+	$(hide) $(call dir_copy,$(1),$$(tempSmaliDir))
+	$(hide) $(call part_smali_append,--onlypart,$(1)/smali,$$(tempSmaliDir)/smali);
+	$(hide) $(call custom_jar,$$(jarBaseName),$$(tempSmaliDir))
 	$(hide) $(call name_to_id,$$(tempSmaliDir))
 	$(hide) $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_MERGED_TAG));
 	$(hide) $(APKTOOL) b $$(tempSmaliDir) $$@;
