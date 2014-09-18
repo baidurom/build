@@ -53,12 +53,15 @@ class ModifyId(object):
         return arrayId.replace('0x0', '0x')
 
     def getArrayStr(self, arrayId):
-         arrayStr = '0x%st 0x%st 0x%st 0x%st' % (arrayId[-2:], arrayId[-4:-2], arrayId[-6:-4], arrayId[-7:-6])
-         return arrayStr.replace('0x0', '0x')
+        if cmp(arrayId[-8], "x") == 0:
+            arrayStr = '0x%st 0x%st 0x%st 0x%st' % (arrayId[-2:], arrayId[-4:-2], arrayId[-6:-4], arrayId[-7:-6])
+        else:
+            arrayStr = '0x%st 0x%st 0x%st 0x%st' % (arrayId[-2:], arrayId[-4:-2], arrayId[-6:-4], arrayId[-8:-6])
+        return arrayStr.replace('0x0', '0x')
 
     def modifyId(self):
-        normalIdRule = re.compile(r'0x[1-6][0-1][0-9a-f]{5}')
-        arrayIdRule = re.compile(r'(?:0x[0-9a-f]{1,2}t ){3}0x[1-6]t')
+        normalIdRule = re.compile(r'0x(?:[1-9]|7f)[0-1][0-9a-f]{5}')
+        arrayIdRule = re.compile(r'(?:0x[0-9a-f]{1,2}t ){3}0x(?:[1-9]|7f)t')
 
         for smaliFile in self.smaliFileList:
             # print ">>> start modify: %s" % smaliFile
@@ -84,7 +87,7 @@ class ModifyId(object):
 
             if modify is True:
                 sf.seek(0, 0)
-		sf.truncate()
+                sf.truncate()
                 fileStr = fileStr.replace(r'0x#', '0x')
                 sf.write(fileStr)
             sf.close()

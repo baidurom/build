@@ -78,7 +78,7 @@ clean-out:
 
 CLEAN_TARGETS += clean-source
 
-CLEAN_SOURCE_REMOVE_TARGETS := $(patsubst %,$(BAIDU_DIR)/%,$(filter-out $(notdir $(BAIDU_ZIP) $(BAIDU_BASE_ZIP) $(BAIDU_LAST_ZIP)) \
+CLEAN_SOURCE_REMOVE_TARGETS := $(patsubst %,$(BAIDU_DIR)/%,$(filter-out $(notdir $(BAIDU_ZIP) $(BAIDU_BASE_ZIP) $(BAIDU_LAST_ZIP) $(THEME_RES)) \
                                     timestamp,$(shell if [ -d $(BAIDU_DIR) ]; then ls $(BAIDU_DIR); fi)))
 .PHONY: clean-source
 clean-source:
@@ -116,8 +116,8 @@ endif
 #################   prebuilt   #########################
 # get all of the files from source/system
 ALL_BAIDU_FILES := \
-    $(strip $(patsubst $(BAIDU_SYSTEM)/%,%,\
-        $(strip $(call get_all_files_in_dir,$(BAIDU_SYSTEM)))))
+    $(strip $(patsubst $(BAIDU_SYSTEM_FOR_POS)/%,%,\
+        $(strip $(call get_all_files_in_dir,$(BAIDU_SYSTEM_FOR_POS)))))
 
 # get all of the files from vendor/vendor_files
 ALL_VENDOR_FILES := \
@@ -141,11 +141,16 @@ PRJ_CUSTOM_TARGET += $(sort $(strip \
         $(baidu_modify_jars))))
 
 PRJ_CUSTOM_TARGET += $(sort framework/framework-res.apk)
-
 PRJ_CUSTOM_TARGET += $(sort build.prop)
+
+BAIDU_PRJ_CUSTOM_TARGET := $(PRJ_CUSTOM_TARGET)
+$(call resetPosition,BAIDU_PRJ_CUSTOM_TARGET,$(BAIDU_SYSTEM_FOR_POS))
+$(call resetPosition,PRJ_CUSTOM_TARGET,$(VENDOR_SYSTEM))
+PRJ_CUSTOM_TARGET := $(strip $(PRJ_CUSTOM_TARGET) $(BAIDU_PRJ_CUSTOM_TARGET))
 
 # add the vendor prebuilt apps
 VENDOR_PREBUILT_APPS := $(patsubst %,app/%.apk,$(vendor_saved_apps))
+$(call resetPosition,VENDOR_PREBUILT_APPS,$(VENDOR_SYSTEM))
 
 include $(PORT_BUILD)/prebuilt.mk
 
@@ -184,28 +189,23 @@ $(IF_MERGED_RES): $(FRAMEWORK_APKS_TARGETS)
 	$(hide) touch $@
 
 ifeq ($(ALL_FRW_NAME_TO_ID),true)
-PREPARE_FRW_APKS := $(FRAMEWORK_APKS_TARGETS)
+PREPARE_FRW_APKS := $(patsubst %,$(FRW_RES_DECODE_MERGED):%,$(FRAMEWORK_APKS_TARGETS))
+PREPARE_FRW_APKS += $(patsubst %,$(FRW_RES_DECODE_BAIDU):%,$(BAIDU_FRAMEWORK_APKS))
+PREPARE_FRW_APKS += $(patsubst %,$(FRW_RES_DECODE_VENDOR):%,$(VENDOR_FRAMEWORK_APKS))
 else
-PREPARE_FRW_APKS := $(OUT_SYSTEM_FRAMEWORK)/framework-res.apk
+PREPARE_FRW_APKS := $(FRW_RES_DECODE_MERGED):$(OUT_OBJ_FRAMEWORK)/framework-res.apk
+PREPARE_FRW_APKS += $(FRW_RES_DECODE_BAIDU):$(BAIDU_FRAMEWORK_RES)
+PREPARE_FRW_APKS += $(FRW_RES_DECODE_VENDOR):$(VENDOR_FRAMEWORK_RES)
 endif
 
-ifeq ($(strip $(NOT_CUSTOM_FRAMEWORK-RES)),true)
-PREPARE_FRW_APKS := $(filter-out %/framework-res.apk,$(PREPARE_FRW_APKS))
-endif
+$(foreach frw_res,$(FRAMEWORK_APKS_TARGETS),\
+	$(eval $(if $(filter-out 3,$(words $(filter %/$(call getBaseName,$(frw_res)).apk,$(PREPARE_FRW_APKS)))),,BOTH_OWN_RES += $(call getBaseName,$(frw_res)))))
 
-$(foreach frw_res,$(PREPARE_FRW_APKS),\
-	$(eval targetDir := $(FRW_RES_DECODE)/$(call getBaseName,$(frw_res))) \
+$(foreach frw_res_pair,$(PREPARE_FRW_APKS),\
+	$(eval frw_res := $(call word-colon,2,$(frw_res_pair))) \
+	$(eval targetDir := $(call word-colon,1,$(frw_res_pair))/$(call getBaseName,$(frw_res))) \
 	$(eval $(call decode_merged,$(frw_res),$(targetDir))) \
 	$(eval PREPARE_FRW_RES_TARGET += $(targetDir)/apktool.yml))
-
-ifeq ($(strip $(filter %/framework-res.apk,$(PREPARE_FRW_APKS))),)
-$(FRW_RES_DECODE)/framework-res/res/values/public.xml: $(MERGED_PUBLIC_XML)
-	$(hide) mkdir -p `dirname $@`
-	$(hide) cp $(VENDOR_FRAMEWORK_RES_OUT)/AndroidManifest.xml $(FRW_RES_DECODE)/framework-res/AndroidManifest.xml
-	$(hide) cp $< $@
-
-PREPARE_FRW_RES_TARGET += $(FRW_RES_DECODE)/framework-res/res/values/public.xml
-endif
 
 .IGNORE: $(PREPARE_FRW_RES_TARGET)
 
@@ -219,34 +219,51 @@ include $(PORT_BUILD)/build.prop.mk
 
 ################ framework-res #########################
 
-# get the public.xml from framework-res.apk
-PRJ_PUBLIC_XML += $(BAIDU_PUBLIC_XML)
-$(eval $(call get_publicXml_template,$(BAIDU_PUBLIC_XML),$(BAIDU_FRAMEWORK_RES)))
-
-PRJ_PUBLIC_XML += $(VENDOR_PUBLIC_XML)
-$(eval $(call get_publicXml_template,$(VENDOR_PUBLIC_XML),$(VENDOR_FRAMEWORK_RES),-t $(APKTOOL_VENDOR_TAG)))
-
-PRJ_PUBLIC_XML += $(MERGED_PUBLIC_XML)
-$(eval $(call get_publicXml_template,$(MERGED_PUBLIC_XML),$(OUT_OBJ_FRAMEWORK)/framework-res.apk))
-
 # generate the merged_update.txt mereged_none.txt merged_add.txt
 .PHONY: generate-merged-txts
-MERGED_TXTS := $(MERGE_NONE_TXT) $(MERGE_ADD_TXT) $(MERGE_UPDATE_TXT)
-$(MERGED_TXTS): $(PRJ_PUBLIC_XML)
+MERGED_TXTS := $(MERGE_NONE_TXT) $(MERGE_ADD_TXT)
+$(MERGED_TXTS): $(MERGE_UPDATE_TXT)
+	@ echo "" > /dev/null
+
+$(MERGE_UPDATE_TXT): TXT_OUT_DIR := $(OUT_OBJ_RES)
+$(MERGE_UPDATE_TXT): TMP_OUT_DIR := $(OUT_OBJ_RES)/tmp_txts
+$(MERGE_UPDATE_TXT): TMP_UPDATE := $(OUT_OBJ_RES)/tmp_update.txt
+$(MERGE_UPDATE_TXT): TMP_NONE := $(OUT_OBJ_RES)/tmp_none.txt
+$(MERGE_UPDATE_TXT): OTHER_FRW_RES := $(filter-out framework-res, $(BOTH_OWN_RES))
+$(MERGE_UPDATE_TXT): $(PREPARE_FRW_RES_JOB)
 	$(hide) echo ">>> generate merged txts"
 	$(hide) echo ">>> generate the merged_update.txt mereged_none.txt merged_add.txt"
-	$(hide) mkdir -p $(OUT_OBJ_RES)
+	$(hide) mkdir -p $(TMP_OUT_DIR)
 	$(hide) $(DIFFMAP_TOOL) -map $(VENDOR_PUBLIC_XML) \
-		$(MERGED_PUBLIC_XML) $(BAIDU_PUBLIC_XML) $(OUT_OBJ_RES) > /dev/null
+		$(MERGED_PUBLIC_XML) $(BAIDU_PUBLIC_XML) $(TMP_OUT_DIR) > /dev/null
+ifeq ($(ALL_FRW_NAME_TO_ID),true)
+	$(hide) for frw_res in $(OTHER_FRW_RES); do \
+				if [ -f $(FRW_RES_DECODE_MERGED)/$$frw_res/res/values/public.xml ] && \
+					[ -f $(FRW_RES_DECODE_BAIDU)/$$frw_res/res/values/public.xml ]; then \
+						echo "Gen MAP TLX"; \
+						$(GENMAP_TOOL) -map $(FRW_RES_DECODE_MERGED)/$$frw_res/res/values/public.xml \
+								$(FRW_RES_DECODE_BAIDU)/$$frw_res/res/values/public.xml \
+								$(TMP_UPDATE) $(TMP_NONE); \
+						if [ -f $(TMP_UPDATE) ]; then \
+							cat $(TMP_UPDATE) >> $(TMP_OUT_DIR)/merge_update.txt; \
+						fi; \
+						rm -rf $(TMP_UPDATE) $(TMP_NONE); \
+				fi; \
+			done
+endif
+	$(hide) mv $(TMP_OUT_DIR)/* $(TXT_OUT_DIR)
+	$(hide) rm -rf $(TMP_OUT_DIR)
 	$(hide) echo ">>> generate merged txts done"
 
-generate-merged-txts: $(MERGED_TXTS)
+generate-merged-txts: $(MERGE_UPDATE_TXT)
+	@ echo "" > /dev/null
 
 CLEAN_TARGETS += clean-merged-txts
 .PHONY: clean-merged-txts
+clean-merged-txts: CLEAN_MERGED_TXTS := $(MERGED_TXTS) $(MERGE_UPDATE_TXT)
 clean-merged-txts:
-	$(hide) echo ">>> remove $(MERGED_TXTS)"
-	$(hide) rm -rf $(MERGED_TXTS);
+	$(hide) echo ">>> remove $(CLEAN_MERGED_TXTS)"
+	$(hide) rm -rf $(CLEAN_MERGED_TXTS);
 
 # get the sources files of overlay and vendor framework-res
 # get project overlay
@@ -323,6 +340,7 @@ BAIDU_UPDATE_RES_APPS := $(sort $(strip $(filter $(ALL_BAIDU_FILES),$(BAIDU_UPDA
 
 # build baidu_modify_apps
 BAIDU_MODIFY_APPS := $(strip $(patsubst %,app/%.apk,$(baidu_modify_apps)))
+$(call resetPosition,BAIDU_MODIFY_APPS,$(BAIDU_SYSTEM_FOR_POS))
 #$(info # BAIDU_MODIFY_APPS:$(BAIDU_MODIFY_APPS))
 $(foreach apk,$(BAIDU_MODIFY_APPS),\
     $(eval $(call baidu_modify_apk_build,$(PRJ_ROOT)/$(call getBaseName,$(apk)),$(apk))))
@@ -347,27 +365,27 @@ $(foreach apk,$(BAIDU_UPDATE_RES_APPS),\
 #$(info # vendor_modify_apps:$(vendor_modify_apps))
 
 $(foreach apk,$(vendor_modify_apps),\
+    $(eval apkPos := $(call posOfApp,app/$(apk).apk,$(VENDOR_SYSTEM))) \
     $(if $(wildcard $(PRJ_ROOT)/$(apk)/smali), \
-           $(eval $(call vendor_modify_apk_build,$(PRJ_ROOT)/$(apk),app/$(apk).apk)), \
+           $(eval $(call vendor_modify_apk_build,$(PRJ_ROOT)/$(apk),$(apkPos))), \
            $(if $(call is_framework_apk,$(PRJ_ROOT)/$(apk)/apktool.yml), \
-               $(eval $(call framework_apk_build,$(PRJ_ROOT)/$(apk),framework/$(apk).apk)), \
-               $(eval $(call vendor_modify_apk_build,$(PRJ_ROOT)/$(apk),app/$(apk).apk)) \
+               $(eval $(call framework_apk_build,$(PRJ_ROOT)/$(apk),$(apkPos))), \
+               $(eval $(call vendor_modify_apk_build,$(PRJ_ROOT)/$(apk),$(apkPos))) \
            ) \
     ) \
 )
 
 ################### need signed apks ###################
 # remove the files which doesn't exist!!
-BAIDU_SIGNED_APPS += $(filter %.apk,$(BAIDU_PREBUILT))
-
 BAIDU_SIGNED_APPS := $(sort $(strip $(filter $(ALL_BAIDU_FILES),$(BAIDU_SIGNED_APPS))))
 BAIDU_SIGNED_APPS := $(filter-out $(PRJ_CUSTOM_TARGET),$(BAIDU_SIGNED_APPS))
-BAIDU_SIGNED_APPS := $(filter-out $(patsubst %,app/%.apk,$(baidu_remove_apps)),$(BAIDU_SIGNED_APPS))
+$(call resetPositionApp,baidu_remove_apps,$(BAIDU_SYSTEM_FOR_POS))
+BAIDU_SIGNED_APPS := $(filter-out $(baidu_remove_apps),$(BAIDU_SIGNED_APPS))
 
 PRIVATE_MINI_SYSTEM_SAVE_APPS := $(filter $(MINI_SYSTEM_SAVE_APPS),$(BAIDU_SIGNED_APPS))
 
 BAIDU_SIGNED_FR_APPS  := $(filter framework/%,$(BAIDU_SIGNED_APPS)) $(PRIVATE_MINI_SYSTEM_SAVE_APPS)
-BAIDU_SIGNED_APP_APPS := $(filter-out $(PRIVATE_MINI_SYSTEM_SAVE_APPS),$(filter app/%,$(BAIDU_SIGNED_APPS)))
+BAIDU_SIGNED_APP_APPS := $(filter-out $(BAIDU_SIGNED_FR_APPS),$(BAIDU_SIGNED_APPS))
 
 # add the baidu sign apk to SIGN_APPS
 ifeq ($(strip $(MINI_SYSTEM)),true)
@@ -471,6 +489,9 @@ OTA $(OUT_OTA): $(strip $(call get_all_files_in_dir,$(VENDOR_OTA))) $(strip $(ca
 	$(hide) mkdir -p $(OUT_OTA);
 	$(hide) cp -rf $(VENDOR_OTA)/* $(OUT_OTA);
 	$(hide) if [ -d $(BAIDU_OTA) ]; then cp -rf $(BAIDU_OTA)/* $(OUT_OTA); fi
+	$(hide) if [ -d $(PRJ_OTA_OVERLAY) ]; then cp -rf $(PRJ_OTA_OVERLAY)/* $(OUT_OTA); fi
+	$(hide) if [ -f $(PRJ_UPDATE_BINARY_OVERLAY) ]; then cp $(PRJ_UPDATE_BINARY_OVERLAY) $(OUT_OTA)/bin/updater; fi
+	$(hide) if [ -f $(PRJ_UPDATER_SCRIPT_OVERLAY) ]; then cp $(PRJ_UPDATER_SCRIPT_OVERLAY) $(OUT_OTA); fi
 
 ########### recover the link files in system ###########
 .PHONY: recover_link
@@ -487,6 +508,9 @@ updateapkcerts: $(OUT_META)/apkcerts.txt
 
 OTA_TARGETS += $(TARGET_FILES_META)
 ifeq ($(USER),baidu)
+$(BAIDU_META)/apkcerts.txt: $(PREPARE_SOURCE)
+	@ echo "Do nothing" > /dev/null
+
 $(OUT_OBJ_META)/apkcerts.txt: USE_VENDOR_CERT_APPS:= $(strip $(patsubst %,%.apk,$(vendor_modify_apps)) $(VENDOR_SIGN_APPS))
 $(OUT_OBJ_META)/apkcerts.txt: $(BAIDU_META)/apkcerts.txt $(VENDOR_META)/apkcerts.txt
 	$(hide) echo ">>> base $(BAIDU_META)/apkcerts.txt";
@@ -627,6 +651,7 @@ endif
 $(PRJ_FULL_OTA_ZIP): $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
 	$(hide) echo $(PRJ_FULL_OTA_ZIP) > $(PRJ_SAVED_OTA_NAME)
 	$(hide) $(OTA_FROM_TARGET_FILES) \
+			$(if $(wildcard $(PRJ_UPDATER_SCRIPT_PART)),$(addprefix -e , $(PRJ_UPDATER_SCRIPT_PART)),) \
 			$(FORMAT_PARAM) \
 			$(SIGN_OTA_PARAM) \
 			-n -k $(OTA_CERT) \

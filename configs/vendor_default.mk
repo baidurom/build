@@ -5,6 +5,7 @@
 # the app directory must be remove
 vendor_remove_dirs  += \
 	app \
+	priv-app \
 	media/audio/ringtones
 
 vendor_remove_files += \

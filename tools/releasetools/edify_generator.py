@@ -18,6 +18,8 @@ import re
 import common
 import string
 
+OPTIONS = common.OPTIONS
+
 class EdifyGenerator(object):
   """Class to generate scripts in the 'edify' recovery script language
   used from donut onwards."""
@@ -305,3 +307,14 @@ class EdifyGenerator(object):
       data = open(os.path.join(input_path, "updater")).read()
     common.ZipWriteStr(output_zip, "META-INF/com/google/android/update-binary",
                        data, perms=0755)
+
+  def AddToZipHook(self, input_zip, output_zip, input_path=None):
+    try:
+      script = input_zip.read("OTA/updater-script")
+      self.script = []
+      self.script.append(script)
+      if OPTIONS.extra_script is not None:
+        self.script.append(OPTIONS.extra_script)
+    except KeyError as e:
+      print "use default script...."
+    self.AddToZip(input_zip, output_zip, input_path)

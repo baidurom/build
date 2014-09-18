@@ -19,14 +19,11 @@ VENDOR_PREBUILT_FILES:=$(filter-out $(PRJ_CUSTOM_TARGET), $(VENDOR_PREBUILT_FILE
 
 VENDOR_PREBUILT_FILES += $(VENDOR_PREBUILT_APPS)
 ############## prepare baidu prebuilt #########################
-# get all of the files in $(BAIDU_PREBUILT_DIRS)
-$(foreach dirname,$(BAIDU_PREBUILT_DIRS), \
-    $(eval BAIDU_PREBUILT_FILES += \
-    $(sort $(patsubst $(BAIDU_SYSTEM)/%,%,$(call get_all_files_in_dir,$(BAIDU_SYSTEM)/$(dirname))))))
-
 # filter the target which are not prebuilt
 BAIDU_PREBUILT_FILES += $(strip $(BAIDU_PREBUILT_APPS) $(BAIDU_PREBUILT))
-BAIDU_PREBUILT_FILES := $(sort $(strip $(filter-out $(PRJ_CUSTOM_TARGET),$(BAIDU_PREBUILT_FILES))))
+BAIDU_PREBUILT_FILES := $(sort $(strip $(filter-out $(PRJ_CUSTOM_TARGET) $(BAIDU_UPDATE_RES_APPS),$(BAIDU_PREBUILT_FILES))))
+
+BAIDU_SIGNED_APPS    := $(filter %.apk,$(BAIDU_PREBUILT_FILES))
 BAIDU_PREBUILT_FILES := $(filter-out %.apk,$(BAIDU_PREBUILT_FILES))
 
 # filter these files which are not exist!!

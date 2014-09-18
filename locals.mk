@@ -48,6 +48,10 @@ ifeq ($(strip $(NO_SYSTEM_IMG)),)
 NO_SYSTEM_IMG := true
 endif
 
+ifeq ($(strip $(MINI_SYSTEM)),)
+MINI_SYSTEM := true
+endif
+
 ##################### density ############################
 ALL_DENSITY := \
      mdpi \
@@ -105,6 +109,12 @@ BAIDU_ZIP          := $(BAIDU_DIR)/baidu.zip
 BAIDU_BASE_ZIP     := $(BAIDU_DIR)/baidu.deodex.zip
 BAIDU_LAST_ZIP     := $(BAIDU_DIR)/last_baidu.zip
 
+ifeq ($(strip $(THEME_RES)),)
+ifneq ($(wildcard $(BAIDU_DIR)/theme_full_res.zip),)
+THEME_RES := $(BAIDU_DIR)/theme_full_res.zip
+endif
+endif
+
 # apktool tags
 # which used to compile multiple projects simultaneously
 APKTOOL_BAIDU_TAG  := baidu_$(PRJ_NAME)
@@ -141,10 +151,6 @@ OUT_OBJ_APP       := $(OUT_OBJ_SYSTEM)/app
 OUT_OBJ_RES       := $(OUT_OBJ_SYSTEM)/res
 OUT_OBJ_BIN       := $(OUT_OBJ_SYSTEM)/bin
 
-BAIDU_PUBLIC_XML  := $(OUT_OBJ_RES)/public_master.xml
-VENDOR_PUBLIC_XML := $(OUT_OBJ_RES)/public_vendor.xml
-MERGED_PUBLIC_XML := $(OUT_OBJ_RES)/public_merged.xml
-
 MERGE_NONE_TXT   := $(OUT_OBJ_RES)/merge_none.txt
 MERGE_ADD_TXT    := $(OUT_OBJ_RES)/merge_add.txt
 MERGE_UPDATE_TXT := $(OUT_OBJ_RES)/merge_update.txt
@@ -155,8 +161,15 @@ IF_MERGED_RES	:= $(OUT_OBJ_FRAMEWORK)/ifmerged
 
 IF_ALL_RES		:= $(IF_BAIDU_RES) $(IF_VENDOR_RES) $(IF_MERGED_RES)
 
-FRW_RES_DECODE      := $(OUT_OBJ_RES)/frw_res_decode
-PREPARE_FRW_RES_JOB := $(FRW_RES_DECODE)/.done
+FRW_RES_DECODE        := $(OUT_OBJ_RES)/frw_res_decode
+FRW_RES_DECODE_MERGED := $(FRW_RES_DECODE)/merged
+FRW_RES_DECODE_VENDOR := $(FRW_RES_DECODE)/vendor
+FRW_RES_DECODE_BAIDU  := $(FRW_RES_DECODE)/baidu
+PREPARE_FRW_RES_JOB   := $(FRW_RES_DECODE)/.done
+
+BAIDU_PUBLIC_XML  := $(FRW_RES_DECODE_BAIDU)/framework-res/res/values/public.xml
+VENDOR_PUBLIC_XML := $(FRW_RES_DECODE_VENDOR)/framework-res/res/values/public.xml
+MERGED_PUBLIC_XML := $(FRW_RES_DECODE_MERGED)/framework-res/res/values/public.xml
 
 OUT_OBJ_AUTOCOM       := $(OUT_OBJ_DIR)/autocom
 AUTOCOM_BAIDU         := $(OUT_OBJ_AUTOCOM)/baidu
@@ -210,6 +223,12 @@ PRJ_OUT_TARGET_ZIP := $(OUT_DIR)/target-files.zip
 ################ overlay for project ######################
 PRJ_OVERLAY           := overlay
 PRJ_FRAMEWORK_OVERLAY := $(PRJ_OVERLAY)/framework-res/res
+PRJ_OTA_OVERLAY       := $(PRJ_OVERLAY)/OTA
+
+PRJ_META_INF_OVERLAY       := $(PRJ_OVERLAY)/META-INF/com/google/android
+PRJ_UPDATE_BINARY_OVERLAY  := $(PRJ_META_INF_OVERLAY)/update-binary
+PRJ_UPDATER_SCRIPT_OVERLAY := $(PRJ_META_INF_OVERLAY)/updater-script
+PRJ_UPDATER_SCRIPT_PART    := $(PRJ_META_INF_OVERLAY)/updater-script.part
 
 ################# baidu overlay ###########################
 BAIDU_OVERLAY           := $(PORT_ROOT)/baidu/frameworks/overlay
@@ -224,6 +243,12 @@ BAIDU_FRAMEWORK     := $(BAIDU_SYSTEM)/framework
 BAIDU_FRAMEWORK_RES := $(BAIDU_FRAMEWORK)/framework-res.apk
 
 PREPARE_SOURCE      := $(BAIDU_SYSTEM)/.preparesource
+
+ifeq ($(wildcard $(BAIDU_SYSTEM)),)
+BAIDU_SYSTEM_FOR_POS := $(BAIDU_RELEASE)/system
+else
+BAIDU_SYSTEM_FOR_POS := $(BAIDU_SYSTEM)
+endif
 
 ############## vendor framework-res smali dir #############
 VENDOR_FRAMEWORK_RES_OUT := $(PRJ_ROOT)/framework-res
@@ -307,6 +332,7 @@ UPDATE_FILE_SYSTEM       := $(PORT_BUILD_TOOLS)/UpdateFilesystem.py
 UPDATE_APKTOOL_YML_TOOLS := $(PORT_BUILD_TOOLS)/update_apktool_yml.sh
 DIFFMAP_TOOL             := $(PORT_BUILD_TOOLS)/diffmap.sh
 MODIFY_ID_TOOL           := $(PORT_BUILD_TOOLS)/modifyID.py
+GENMAP_TOOL              := $(PORT_BUILD_TOOLS)/GenMap.py
 
 RECOVER_LINK             := $(PORT_BUILD_TOOLS)/releasetools/recoverylink.py
 OTA_FROM_TARGET_FILES    := $(PORT_BUILD_TOOLS)/releasetools/ota_from_target_files
@@ -322,6 +348,7 @@ SIGN_TOOL                := $(PORT_BUILD_TOOLS)/sign.sh
 PORT_CUSTOM_APP          := $(PORT_BUILD_TOOLS)/custom_app.sh
 PORT_CUSTOM_JAR          := $(PORT_BUILD_TOOLS)/custom_jar.sh
 PORT_CUSTOM_BAIDU_ZIP    := $(PORT_BUILD_TOOLS)/custom_baidu_zip.sh
+PORT_PREPARE_CUSTOM_JAR  := $(PORT_BUILD_TOOLS)/prepare_custom_jar.sh
 
 TESTKEY_PEM := $(PORT_BUILD)/security/testkey.x509.pem
 TESTKEY_PK  := $(PORT_BUILD)/security/testkey.pk8
@@ -340,6 +367,9 @@ ID_TO_NAME_TOOL := $(PORT_TOOLS)/idtoname
 
 SCHECK          := $(PORT_TOOLS)/smaliparser/SCheck
 AUTOFIX_TOOL    := python $(PORT_TOOLS)/smaliparser/reject.py
+
+PUSH                 := $(PORT_TOOLS)/push
+DEEFAULT_PERMISSION  ?= 644
 
 ################### tools for project ####################
 PRJ_CUSTOM_TARGETFILES := $(PRJ_ROOT)/custom_targetfiles.sh

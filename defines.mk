@@ -70,6 +70,15 @@ define get_merged_installed_framework_params
 `ls ~/apktool/framework/[1-9]-$(APKTOOL_MERGED_TAG).apk | sed 's/^/-I /g'`
 endef
 
+# used for aapt to get resource
+define get_aapt_framework_params
+`if [ "x$(OVERLAY_TAG)" != "x" ]; then \
+ls ~/apktool/framework/[1-9]-$(OVERLAY_TAG).apk | sed 's/^/-I /g'; \
+else \
+ls ~/apktool/framework/[1-9]-$(APKTOOL_MERGED_TAG).apk | sed 's/^/-I /g'; \
+fi`
+endef
+
 # get all files in the directory, only for makefile
 define get_all_files_in_dir
 $(strip $(filter-out $(1),$(shell if [ -d $(1) ]; then find $(1) -type f; fi)))
@@ -98,7 +107,7 @@ endef
 
 # change the #type@name#t to resouce id
 define name_to_id
-for publicXMl in `find $(FRW_RES_DECODE) -name "public.xml"`; \
+for publicXMl in `find $(FRW_RES_DECODE_MERGED) -name "public.xml"`; \
 do \
 $(NAME_TO_ID_TOOL) $$$$publicXMl $(1) > /dev/null; \
 done; \
@@ -116,7 +125,7 @@ if [ "x$(1)" != "x" ] && [ -d $(1)/res ]; then app_res="$$$$app_res -S $(1)/res"
 if [ -d $(1)/assets ]; then app_assests="$$$$app_assests -A $(1)/assets"; fi; \
 minSdkVersion=`$(call getMinSdkVersionFromApktoolYmlFD,$(1)/apktool.yml)`; \
 targetSdkVersion=`$(call getTargetSdkVersionFromApktoolYmlFD,$(1)/apktool.yml)`;\
-$(AAPT) package -u -z $(call get_merged_installed_framework_params) \
+$(AAPT) package -u -z $(call get_aapt_framework_params) \
 	$(if $(filter true,$(FULL_RES)),,$(addprefix -c , $(PRIVATE_PRODUCT_AAPT_CONFIG)) \
 									$(addprefix --preferred-configurations , $(PRIVATE_PRODUCT_AAPT_PREF_CONFIG))) \
 	$(if $$$$minSdkVersion,$(addprefix --min-sdk-version , $$$$minSdkVersion),) \
@@ -125,8 +134,12 @@ $(AAPT) package -u -z $(call get_merged_installed_framework_params) \
 	$$$$app_assests \
 	$$$$app_res \
 	-F $(1).tmp.apk \
-	1>/dev/null || exit $?; \
-$(APKTOOL) d -t $(APKTOOL_MERGED_TAG) -f $(1).tmp.apk $(1).tmp; \
+	1>/dev/null || exit $$?; \
+if [ "x$(OVERLAY_TAG)" != "x" ]; then \
+	$(APKTOOL) d -t $(OVERLAY_TAG) -f $(1).tmp.apk $(1).tmp; \
+else \
+	$(APKTOOL) d -t $(APKTOOL_MERGED_TAG) -f $(1).tmp.apk $(1).tmp; \
+fi; \
 rm -r $(1)/res && cp -r $(1).tmp/res $(1); \
 rm -rf $(1).tmp.apk $(1).tmp
 endef
@@ -134,6 +147,7 @@ endef
 define aapt_build_baidu_apk
 $(2): tempSmaliDir  := $(shell mktemp -u $(OUT_OBJ_APP)/$(call getBaseName,$(1)).aapt.XXX)
 $(2): apkName := $(call change_bracket,$(notdir $(1)))
+$(2): apkBaseName := $(call getBaseName, $(1))
 $(2): $(OUT_OBJ_META)/apkcerts.txt
 $(2): $(IF_BAIDU_RES)
 $(2): $(1)
@@ -141,8 +155,11 @@ $(2): $(1)
 	$(hide) if [ "x`grep "\\"$$(apkName)\\"" $(OUT_OBJ_META)/apkcerts.txt | grep "\\"PRESIGNED\\""`" = "x" ]; then \
 				rm -rf $$(tempSmaliDir); \
 				$(APKTOOL) d -t $(APKTOOL_BAIDU_TAG) $(1) $$(tempSmaliDir); \
-				$(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_MERGED_TAG)); \
+				$(call port_custom_app,$$(apkBaseName),$$(tempSmaliDir)); \
+                $(eval OVERLAY_TAG := $(APKTOOL_BAIDU_TAG)) \
 				$(call aapt_overlay_apk,$$(tempSmaliDir)); \
+                $(eval OVERLAY_TAG := ) \
+                $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_BAIDU_TAG)); \
 				$(APKTOOL) b $$(tempSmaliDir) $$@; \
 				rm -rf $$(tempSmaliDir); \
 			else \
@@ -172,9 +189,9 @@ $(OUT_OBJ_APP)/$($(2)_apkBaseName).signed.apk: $(OUT_OBJ_RES)/$($(2)_apkBaseName
 	$(hide) mkdir -p $(OUT_OBJ_APP)
 	$(hide) if [ "x`grep "\\"$$(apkName)\\"" $(OUT_OBJ_META)/apkcerts.txt | grep "\\"PRESIGNED\\""`" = "x" ]; then \
 				echo ">>> sign testkey $(1) to $$@"; \
-				cd $$<; \
+				cd $$< > /dev/null; \
 				zip $$(apkName) * -r -q -0; \
-				cd -; \
+				cd - > /dev/null; \
 				zip -d $$</$$(apkName) "META-INF/*" 2>&1 > /dev/null; \
 				java -jar $(SIGN_JAR) $(TESTKEY_PEM) $(TESTKEY_PK) $$</$$(apkName) $$@; \
 				rm $$</$($(2)_apkBaseName).apk; \
@@ -221,12 +238,12 @@ $(2): $(1) $(VENDOR_METAINF)
 	$(hide) mkdir -p $$(tempJarDir);
 	$(hide) if [ -d $(VENDOR_METAINF) ]; then cp -rf $(VENDOR_METAINF) $$(tempJarDir)/Jar; fi;
 	$(hide) cp $(1) $$(tempJarDir);
-	$(hide) cd $$(tempJarDir) && jar xf $$(jarBaseName);
+	$(hide) cd $$(tempJarDir) && jar xf $$(jarBaseName) > /dev/null;
 	$(hide) mv $$(tempJarDir)/classes.dex $$(tempJarDir)/Jar; 
 	$(hide) if [ $$(jarBaseName) != "framework.jar" ];then \
 				rm -rf $$(tempJarDir)/Jar/preloaded-classes*; \
 			fi; 
-	$(hide) cd $$(tempJarDir) && jar cf $$(jarBaseName) -C Jar/ . ; 
+	$(hide) cd $$(tempJarDir) && jar cf $$(jarBaseName) -C Jar/ . > /dev/null; 
 	$(hide) mv $$(tempJarDir)/$$(jarBaseName) $(2);
 	$(hide) rm -rf $$(tempJarDir);
 	$(hide) echo ">>> Signed out ==> $(2)";
@@ -242,8 +259,11 @@ endef
 # include framework resource apk
 # it would be called when build a apk
 define custom_app
-if [ -f $(PORT_CUSTOM_APP) ]; then $(PORT_CUSTOM_APP) $(1) $(2); fi; \
 if [ -f $(PRJ_CUSTOM_APP) ]; then $(PRJ_CUSTOM_APP) $(1) $(2); fi
+endef
+
+define port_custom_app
+if [ -f $(PORT_CUSTOM_APP) ]; then $(PORT_CUSTOM_APP) $(1) $(2); fi
 endef
 
 # update the framework.jar.out/smali/com/android/internal/R*.smali
@@ -260,12 +280,14 @@ endef
 define copy_package
 ifneq ($(strip $(baidu_prebuilt_package)),)
 	$(hide) echo ">>> begin copy baidu packages: \"$(baidu_prebuilt_package)\"\n \
-		\t\tfrom $(BAIDU_SYSTEM)/$(1) to $(3)"
-	$(hide) if [ -f $(BAIDU_SYSTEM)/$(1) ]; then \
-				$(APKTOOL) d -f -t $(APKTOOL_BAIDU_TAG) $(BAIDU_SYSTEM)/$(1) $(2); \
-				$(call modify_res_id,$(2)/smali); \
-				$(foreach package,$(baidu_prebuilt_package),\
-					$(call safe_dir_copy,$(2)/smali/$(package),$(3)/smali/$(package))) fi;
+		\t\tfrom $(BAIDU_SYSTEM)/$(baidu_prebuilt_from) to $(3)"
+	$(hide) $(foreach from,$(baidu_prebuilt_from), \
+					if [ -f $(BAIDU_SYSTEM)/$(from) ]; then \
+						rm -rf $(1); \
+						$(APKTOOL) d -f -t $(APKTOOL_BAIDU_TAG) $(BAIDU_SYSTEM)/$(from) $(1); \
+						$(call modify_res_id,$(1)/smali); \
+						$(foreach package,$(baidu_prebuilt_package),\
+						$(call safe_dir_copy,$(1)/smali/$(package),$(2)/smali/$(package))) fi;)
 endif
 endef
 
@@ -275,11 +297,20 @@ define custom_jar
 	$(hide) if [ $(call hasInternalResource,$(2)) ];then \
 				$(call update_internal_resource,$(MERGE_ADD_TXT),$(2)/$(FRWK_INTER_RES_POS)); \
 			fi;
-	$(hide) if [ -f $(PORT_CUSTOM_JAR) ];then \
-				$(PORT_CUSTOM_JAR) $(1) $(2); \
-			fi;
 	$(hide) if [ -f $(PRJ_CUSTOM_JAR) ];then \
 				$(PRJ_CUSTOM_JAR) $(1) $(2); \
+			fi
+endef
+
+define port_custom_jar
+	$(hide) if [ -f $(PORT_CUSTOM_JAR) ];then \
+				$(PORT_CUSTOM_JAR) $(1) $(2); \
+			fi
+endef
+
+define prepare_custom_jar
+	$(hide) if [ -f $(PORT_PREPARE_CUSTOM_JAR) ];then \
+				$(PORT_PREPARE_CUSTOM_JAR) $(1) $(2); \
 			fi
 endef
 
@@ -327,6 +358,7 @@ $(OUT_OBJ_SYSTEM)/$(2): $(BAIDU_SYSTEM)/$(2) $(MERGE_UPDATE_TXT) $(PREPARE_FRW_R
 			else \
 				echo ">>> $$(tempSmaliDir) not need to update res id"; \
 			fi;
+	$(hide) $(call port_custom_app,$$(apkBaseName),$$(tempSmaliDir));
 	$(hide) $(call part_smali_append,$(1)/smali,$$(tempSmaliDir)/smali);
 	$(hide) $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_MERGED_TAG));
 	$(hide) if [ ! -d `dirname $(OUT_OBJ_SYSTEM)/$(2)` ]; then \
@@ -356,9 +388,12 @@ $(OUT_OBJ_SYSTEM)/$(2): $(PREPARE_FRW_RES_JOB) $(IF_ALL_RES) $$($(call getBaseNa
 	$(hide) rm -rf $$(tempSmaliDir)
 	$(hide) mkdir -p $$(tempSmaliDir)
 $(eval baidu_prebuilt_package:=$(strip $(BAIDU_PREBUILT_PACKAGE_$(apk))))
-$(call copy_package,$(2),$$(baiduSmaliDir),$$(tempSmaliDir))
+$(eval baidu_prebuilt_from:=$(call posOfApp,$(if $(strip $(BAIDU_PREBUILT_PACKAGE_$(apk)_from)),$(BAIDU_PREBUILT_PACKAGE_$(apk)_from),$(2)),$(BAIDU_SYSTEM_FOR_POS)))
+$(call copy_package,$$(baiduSmaliDir),$$(tempSmaliDir))
 $(eval baidu_prebuilt_package:=)
+$(eval baidu_prebuilt_from:=)
 	$(hide) $(call dir_copy,$(1),$$(tempSmaliDir))
+	$(hide) $(call port_custom_app,$$(apkBaseName),$$(tempSmaliDir));
 	$(hide) $(call part_smali_append,--onlypart,$(1)/smali,$$(tempSmaliDir)/smali);
 	$(hide) $(call custom_app,$$(apkBaseName),$$(tempSmaliDir));
 	$(hide) $(call name_to_id,$$(tempSmaliDir));
@@ -395,6 +430,7 @@ $(OUT_OBJ_SYSTEM)/$(2): $(IF_VENDOR_RES) $$($(call getBaseName, $(2))_fk_sources
 	$(hide) rm -rf $$(tempSmaliDir)
 	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK)
 	$(hide) $(call dir_copy,$(1),$$(tempSmaliDir))
+	$(hide) $(call port_custom_app,$$(apkBaseName),$$(tempSmaliDir));
 	$(hide) $(call custom_app,$$(apkBaseName),$$(tempSmaliDir));
 	$(hide) $(call update_apktool_yml,$$(tempSmaliDir)/apktool.yml,$(APKTOOL_VENDOR_TAG));
 	$(hide) mkdir -p `dirname $$@`
@@ -425,6 +461,8 @@ $(OUT_OBJ_SYSTEM)/$(2): $(BAIDU_SYSTEM)/$(2) $(MERGE_UPDATE_TXT) $(PREPARE_FRW_R
 	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK)
 	$(hide) $(APKTOOL) d -t $(APKTOOL_BAIDU_TAG) $(BAIDU_SYSTEM)/$(2) $$(tempSmaliDir)
 	$(hide) $(call modify_res_id,$$(tempSmaliDir))
+	$(hide) $(call prepare_custom_jar,$$(jarBaseName),$$(tempSmaliDir))
+	$(hide) $(call port_custom_jar,$$(jarBaseName),$$(tempSmaliDir))
 	$(hide) $(call part_smali_append,$(1)/smali,$$(tempSmaliDir)/smali);
 	$(hide) $(call custom_jar,$$(jarBaseName),$$(tempSmaliDir))
 	$(hide) $(call name_to_id,$$(tempSmaliDir))
@@ -449,9 +487,13 @@ $(OUT_OBJ_SYSTEM)/$(2): $(PREPARE_FRW_RES_JOB) $(MERGED_TXTS) $(IF_ALL_RES) $$($
 	$(hide) rm -rf $$(tempSmaliDir);
 	$(hide) mkdir -p $$(tempSmaliDir)
 $(eval baidu_prebuilt_package:=$(strip $(BAIDU_PREBUILT_PACKAGE_$(jar))))
-$(call copy_package,$(2),$$(baiduSmaliDir),$$(tempSmaliDir))
+$(eval baidu_prebuilt_from:=$(if $(strip $(BAIDU_PREBUILT_PACKAGE_$(jar)_from)),$(BAIDU_PREBUILT_PACKAGE_$(jar)_from),$(2)))
+$(call copy_package,$$(baiduSmaliDir),$$(tempSmaliDir))
 $(eval baidu_prebuilt_package:=)
+$(eval baidu_prebuilt_from:=)
+	$(hide) $(call prepare_custom_jar,$$(jarBaseName),$$(tempSmaliDir))
 	$(hide) $(call dir_copy,$(1),$$(tempSmaliDir))
+	$(hide) $(call port_custom_jar,$$(jarBaseName),$$(tempSmaliDir))
 	$(hide) $(call part_smali_append,--onlypart,$(1)/smali,$$(tempSmaliDir)/smali);
 	$(hide) $(call custom_jar,$$(jarBaseName),$$(tempSmaliDir))
 	$(hide) $(call name_to_id,$$(tempSmaliDir))
@@ -480,6 +522,7 @@ $(OUT_OBJ_SYSTEM)/$(1): $(AAPT_BUILD_TARGET) $(MERGE_UPDATE_TXT) $(IF_ALL_RES) $
 	$(hide) rm -rf "$$(tempSmaliDir)"
 	$(hide) mkdir -p "$$(tempSmaliDir)"
 	$(hide) $(APKTOOL) d -f -t $(APKTOOL_BAIDU_TAG) $(AAPT_BUILD_TARGET) $$(tempSmaliDir) 2>/dev/null;
+	$(hide) $(call port_custom_app,$$(apkBaseName),$$(tempSmaliDir));
 	$(hide) $(call custom_app,$$(apkBaseName),$$(tempSmaliDir))
 	$(hide) $(call modify_res_id,$$(tempSmaliDir))
 	$(hide) $(call name_to_id,$$(tempSmaliDir))

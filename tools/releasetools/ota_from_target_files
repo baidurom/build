@@ -510,7 +510,7 @@ def WriteFullOTAPackage(input_zip, output_zip):
   script.SetPermissionsRecursive("/data/app", 1000, 1000, 0755, 0644)
 
   script.UnmountAll()
-  script.AddToZip(input_zip, output_zip)
+  script.AddToZipHook(input_zip, output_zip)
   WriteMetadata(metadata, output_zip)
 
 

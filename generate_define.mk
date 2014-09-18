@@ -85,12 +85,7 @@ $(call getBaseName, $(2)).phone: baseDir := $(shell basename $(dir $(2)))
 $(call getBaseName, $(2)).phone: baseName := $(notdir $(2))
 $(call getBaseName, $(2)).phone: $(2)
 	$(hide) echo ">>> push $(2) to Phone"
-	adb root
-	@ echo "wait for devices..."
-	adb wait-for-device
-	adb remount
-	adb push $$< /system/$$(baseDir)
-	adb shell chmod 644 /system/$$(baseDir)/$$(baseName)
+	$(hide) $(PUSH) -p $(DEEFAULT_PERMISSION) $$< /system/$$(baseDir)
 endef
 
 define get_base_version
@@ -108,7 +103,7 @@ endef
 
 define getprop
 if [ -f $(2) ]; then \
-    grep -v "^[ \t]*#" $(2) | awk -F= '/$(1)/{print $$2}'; \
+    grep -v "^[ \t]*#" $(2) | awk -F= '/$(1)/{print $$2}' | tail -1; \
 fi
 endef
 
@@ -133,3 +128,51 @@ define formatOverlay
 if [ -d $(1) ]; then find $(1) -name "*.xml" | xargs sed -i 's/\( name *= *"\)android:/\1/g'; fi
 endef
 
+define __posOfFile__
+$(patsubst $(2)/%,%,\
+	$(shell if [ -d "$(2)" ]; then \
+				if [ -f "$(2)/$(1)" ]; then \
+					echo "$(2)/$(1)"; \
+				else \
+					find "$(2)" -name $(notdir $(1)) | head -1; \
+				fi; \
+			fi;))
+endef
+
+define posOfFile
+$(eval realPos := $(call __posOfFile__,$(1),$(2))) \
+$(if $(realPos),$(realPos),$(1))
+endef
+
+define posOfApp
+$(strip $(eval appName := $(patsubst %,%.apk,$(patsubst %.apk,%,$(1)))) \
+$(call posOfFile,$(appName),$(2)) \
+$(eval appName :=))
+endef
+
+define posOfJar
+$(strip $(eval jarName := $(patsubst %,%.jar,$(patsubst %.jar,%,$(1)))) \
+$(call posOfFile,$(jarName),$(2)) \
+$(eval jarName :=))
+endef
+
+define resetPosition
+$(eval PRE_SET := $($(1))) \
+$(eval $(1) := )\
+$(foreach pos,$(PRE_SET),$(eval $(1) += $(call posOfFile,$(pos),$(2)))) \
+$(eval PRE_SET := )
+endef
+
+define resetPositionApp
+$(eval PRE_SET := $($(1))) \
+$(eval $(1) := )\
+$(foreach pos,$(PRE_SET),$(eval $(1) += $(call posOfApp,$(pos),$(2)))) \
+$(eval PRE_SET := )
+endef
+
+define resetPositionJar
+$(eval PRE_SET := $($(1))) \
+$(eval $(1) := )\
+$(foreach pos,$(PRE_SET),$(eval $(1) += $(call posOfJar,$(pos),$(2)))) \
+$(eval PRE_SET := )
+endef
