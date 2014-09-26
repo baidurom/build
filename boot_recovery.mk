@@ -186,5 +186,14 @@ clean-recoveryimage:
 	$(hide) rm -rf $(OUT_OBJ_RECOVERY) $(OUT_RECOVERY) $(OUT_RECOVERY_IMG) $(OUT_DIR)/$(RECOVERY_IMG)
 	$(hide) echo ">>> clean-recoveryimage done"
 
+.PHONY: bootimage.phone
+bootimage.phone: bootimage $(OUT_META)/misc_info.txt $(OUT_RECOVERY_FSTAB)
+	$(hide) $(FLASH) boot $(OUT_RECOVERY_FSTAB) $(OUT_BOOT_IMG) `awk -F= '/fstab_version=/{print $$2}' $(OUT_META)/misc_info.txt`
+
+
+.PHONY: recoveryimage.phone
+recoveryimage.phone: recoveryimage $(OUT_META)/misc_info.txt $(OUT_RECOVERY_FSTAB)
+	$(hide) $(FLASH) recovery $(OUT_RECOVERY_FSTAB) $(OUT_RECOVERY_IMG) `awk -F= '/fstab_version=/{print $$2}' $(OUT_META)/misc_info.txt`
+
 ##############################################################
 

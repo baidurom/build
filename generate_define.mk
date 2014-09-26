@@ -144,6 +144,11 @@ $(eval realPos := $(call __posOfFile__,$(1),$(2))) \
 $(if $(realPos),$(realPos),$(1))
 endef
 
+define isExist
+$(eval realPos := $(call __posOfFile__,$(1),$(2))) \
+$(if $(realPos),$(realPos),)
+endef
+
 define posOfApp
 $(strip $(eval appName := $(patsubst %,%.apk,$(patsubst %.apk,%,$(1)))) \
 $(call posOfFile,$(appName),$(2)) \

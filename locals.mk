@@ -369,6 +369,7 @@ SCHECK          := $(PORT_TOOLS)/smaliparser/SCheck
 AUTOFIX_TOOL    := python $(PORT_TOOLS)/smaliparser/reject.py
 
 PUSH                 := $(PORT_TOOLS)/push
+FLASH                := $(PORT_TOOLS)/bootimgpack/flash.py
 DEEFAULT_PERMISSION  ?= 644
 
 ################### tools for project ####################

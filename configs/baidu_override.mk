@@ -109,9 +109,13 @@ MINI_SYSTEM_SAVE_APPS += BaiduCamera
 $(call resetPositionApp,MINI_SYSTEM_SAVE_APPS,$(BAIDU_SYSTEM_FOR_POS))
 
 ifeq ($(filter Phone,$(vendor_modify_apps)),)
+ifneq ($(strip $(call isExist,Phone.apk,$(VENDOR_SYSTEM))),)
+ifneq ($(strip $(call isExist,Phone.apk,$(BAIDU_SYSTEM_FOR_POS))),)
 NEED_COMPELETE_MODULE_PAIR += \
 	app/Phone.apk:Phone
-endif
+endif # ifneq ($(call posOfApp,Phone,$(BAIDU_SYSTEM_FOR_POS)),)
+endif # ifneq ($(call posOfApp,Phone,$(VENDOR_SYSTEM)),)
+endif # ifeq ($(filter Phone,$(vendor_modify_apps)),)
 
 ifeq ($(filter android.policy,$(vendor_modify_jars)),)
 NEED_COMPELETE_MODULE_PAIR += \
