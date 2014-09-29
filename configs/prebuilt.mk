@@ -1,6 +1,6 @@
 # This file is auto generate by tools/config/config_prebuilt.py
-# version: from 573038(Galaxy Nexus) ==> I9250_D_2.3.58.8(i9250-GN)
-# Date: 2014/09/17 14:21
+# version: from 573038(Galaxy Nexus) ==> I9250_D_2.3.58.45(i9250-GN)
+# Date: 2014/09/27 02:38
 
 BAIDU_PREBUILT_DIRS += \
     etc/defaultTheme \
@@ -44,7 +44,6 @@ BAIDU_PREBUILT += \
     app/BaiduVideoEditor.apk \
     app/BaiduVideoPlayer.apk \
     app/BaiduWallet.apk \
-    app/BulletinSubPage.apk \
     app/Calendar.apk \
     app/DynamicPermissionProvider.apk \
     app/Email2.apk \
@@ -64,6 +63,7 @@ BAIDU_PREBUILT += \
     app/Wallpaper.apk \
     app/YellowPageProvider.apk \
     app/Yellowpages.apk \
+    app/YiYueDu.apk \
     app/iReader.apk \
     bin/WordSegService \
     bin/audioloop \
@@ -451,6 +451,7 @@ BAIDU_PRESIGNED_APPS += \
     BaiduNetworkLocation.apk \
     GameCenter.apk \
     SearchBox.apk \
+    YiYueDu.apk \
     iReader.apk \
 
 
