@@ -125,11 +125,13 @@ if [ "x$(1)" != "x" ] && [ -d $(1)/res ]; then app_res="$$$$app_res -S $(1)/res"
 if [ -d $(1)/assets ]; then app_assests="$$$$app_assests -A $(1)/assets"; fi; \
 minSdkVersion=`$(call getMinSdkVersionFromApktoolYmlFD,$(1)/apktool.yml)`; \
 targetSdkVersion=`$(call getTargetSdkVersionFromApktoolYmlFD,$(1)/apktool.yml)`;\
+sed -i 's/android:versionName[ ]*=[ ]*"[^\"]*"//g' $(1)/AndroidManifest.xml; \
 $(AAPT) package -u -z $(call get_aapt_framework_params) \
 	$(if $(filter true,$(FULL_RES)),,$(addprefix -c , $(PRIVATE_PRODUCT_AAPT_CONFIG)) \
 									$(addprefix --preferred-configurations , $(PRIVATE_PRODUCT_AAPT_PREF_CONFIG))) \
 	$(if $$$$minSdkVersion,$(addprefix --min-sdk-version , $$$$minSdkVersion),) \
 	$(if $$$$targetSdkVersion,$(addprefix --target-sdk-version , $$$$targetSdkVersion),) \
+	$(if $(VERSION_NUMBER),$(addprefix --version-name ,$(VERSION_NUMBER)),) \
 	-M $(1)/AndroidManifest.xml \
 	$$$$app_assests \
 	$$$$app_res \
@@ -141,6 +143,7 @@ else \
 	$(APKTOOL) d -t $(APKTOOL_MERGED_TAG) -f $(1).tmp.apk $(1).tmp; \
 fi; \
 rm -r $(1)/res && cp -r $(1).tmp/res $(1); \
+rm $(1)/AndroidManifest.xml && cp $(1).tmp/AndroidManifest.xml $(1); \
 rm -rf $(1).tmp.apk $(1).tmp
 endef
 

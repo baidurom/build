@@ -59,7 +59,7 @@ export ROM_OFFICIAL_VERSION
 endif
 
 ifeq ($(strip $(VERSION_NUMBER)),)
-BASE_VERSION_NUMBER := $(shell $(call getprop,ro.build.display.id,$(BAIDU_SYSTEM)/build.prop))
+BASE_VERSION_NUMBER := $(shell $(call getprop,ro.build.version.incremental,$(BAIDU_SYSTEM)/build.prop))
 ifneq ($(strip $(BASE_VERSION_NUMBER)),)
 VERSION_NUMBER := $(shell echo $(BASE_VERSION_NUMBER) \
 	| grep ".*_[RSD]_.*" | sed "s/.*\(_[RSD]_.*\)/$(PROJECT_NAME_UP)\1/g")
