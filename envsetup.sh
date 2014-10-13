@@ -169,6 +169,28 @@ function imgtoota()
     fi
 }
 
+
+function otadiff()
+{
+    OTA_FROM_TARGET=$PORT_BUILD/tools/releasetools/ota_from_target_files
+    TEST_KEY=$PORT_BUILD/security/testkey
+    out_zip=$3
+
+    if [ $# -lt 2 ]; then
+        echo "Usage: otadiff pre-target-files.zip target-files.zip [ota-diff.zip]"
+        echo "       pre-target-files.zip: the previous target files"
+        echo "       target-files.zip: the current target files"
+        echo "       [ota-diff.zip]: the ota update zip"
+        return
+    elif [ $# -eq 2 ]; then
+        out_zip=ota-diff.zip
+    fi
+
+    $OTA_FROM_TARGET -k $TEST_KEY -i $1 $2 $out_zip
+    echo ">>> out: $out_zip"
+}
+
+
 SIGN_JAR="$PORT_BUILD/tools/signapk.jar"
 
 KEY_DIR="$PORT_BUILD/security"

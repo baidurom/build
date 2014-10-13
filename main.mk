@@ -240,6 +240,7 @@ ifeq ($(ALL_FRW_NAME_TO_ID),true)
 	$(hide) for frw_res in $(OTHER_FRW_RES); do \
 				if [ -f $(FRW_RES_DECODE_MERGED)/$$frw_res/res/values/public.xml ] && \
 					[ -f $(FRW_RES_DECODE_BAIDU)/$$frw_res/res/values/public.xml ]; then \
+						echo "Gen MAP TLX"; \
 						$(GENMAP_TOOL) -map $(FRW_RES_DECODE_MERGED)/$$frw_res/res/values/public.xml \
 								$(FRW_RES_DECODE_BAIDU)/$$frw_res/res/values/public.xml \
 								$(TMP_UPDATE) $(TMP_NONE); \
@@ -288,32 +289,29 @@ $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: minSdkVersion := $(shell $(call getM
 																$(VENDOR_FRAMEWORK_RES_OUT)/apktool.yml))
 $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: targetSdkVersion := $(shell $(call getTargetSdkVersionFromApktoolYml,\
 																$(VENDOR_FRAMEWORK_RES_OUT)/apktool.yml))
-$(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: OUT_OBJ_FRAMEWORK_RES := $(OUT_OBJ_FRAMEWORK)/framework-res
 $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: $(FRAMEWORK_RES_SOURCE) 
 	$(hide) echo ">>> start auto merge framework-res"
-	$(hide) rm -rf $(OUT_OBJ_FRAMEWORK_RES)
-	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK_RES)
-	$(hide) cp -rf $(BAIDU_FRAMEWORK_OVERLAY) $(OUT_OBJ_FRAMEWORK_RES)/baidu-res-overlay
-	$(hide) $(call formatOverlay,$(OUT_OBJ_FRAMEWORK_RES)/baidu-res-overlay)
+	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK)
+	$(hide) rm -rf $(OUT_OBJ_FRAMEWORK)/baidu-res-overlay
+	$(hide) cp -rf $(BAIDU_FRAMEWORK_OVERLAY) $(OUT_OBJ_FRAMEWORK)/baidu-res-overlay
+	$(hide) $(call formatOverlay,$(OUT_OBJ_FRAMEWORK)/baidu-res-overlay)
 	$(hide) $(if $(PRJ_FRAMEWORK_OVERLAY_SOURCES), \
-				cp -rf $(PRJ_FRAMEWORK_OVERLAY) $(OUT_OBJ_FRAMEWORK_RES)/project-res-overlay; \
-				$(call formatOverlay,$(OUT_OBJ_FRAMEWORK_RES)/project-res-overlay);,)
-	$(hide) cp $(VENDOR_FRAMEWORK_RES_OUT)/AndroidManifest.xml $(OUT_OBJ_FRAMEWORK_RES)/AndroidManifest.xml;
-	$(hide) sed -i 's/android:versionName[ ]*=[ ]*"[^\"]*"//g' $(OUT_OBJ_FRAMEWORK_RES)/AndroidManifest.xml;
+				rm -rf $(OUT_OBJ_FRAMEWORK)/project-res-overlay; \
+				cp -rf $(PRJ_FRAMEWORK_OVERLAY) $(OUT_OBJ_FRAMEWORK)/project-res-overlay; \
+				$(call formatOverlay,$(OUT_OBJ_FRAMEWORK)/project-res-overlay);,)
 	$(AAPT) package -u -x -z \
 		$(if $(filter true,$(FULL_RES)),,$(addprefix -c , $(PRIVATE_PRODUCT_AAPT_CONFIG)) \
 										$(addprefix --preferred-configurations , $(PRIVATE_PRODUCT_AAPT_PREF_CONFIG))) \
 		$(if $(minSdkVersion),$(addprefix --min-sdk-version , $(minSdkVersion)),) \
 		$(if $(targetSdkVersion),$(addprefix --target-sdk-version , $(targetSdkVersion)),) \
-		$(if $(VERSION_NUMBER),$(addprefix --version-name ,$(VERSION_NUMBER)),) \
-		-M $(OUT_OBJ_FRAMEWORK_RES)/AndroidManifest.xml \
+		-M $(VENDOR_FRAMEWORK_RES_OUT)/AndroidManifest.xml \
 		-A $(VENDOR_FRAMEWORK_RES_OUT)/assets \
-		$(if $(PRJ_FRAMEWORK_OVERLAY_SOURCES),-S $(OUT_OBJ_FRAMEWORK_RES)/project-res-overlay,)\
-		-S $(OUT_OBJ_FRAMEWORK_RES)/baidu-res-overlay \
+		$(if $(PRJ_FRAMEWORK_OVERLAY_SOURCES),-S $(OUT_OBJ_FRAMEWORK)/project-res-overlay,)\
+		-S $(OUT_OBJ_FRAMEWORK)/baidu-res-overlay \
 		-S $(VENDOR_FRAMEWORK_RES_OUT)/res \
 		-F $@ 1>/dev/null
 	$(hide) echo ">>> aapt done"
-
+		
 
 $(OUT_OBJ_FRAMEWORK)/framework-res.apk: tmpResDir := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/framework-res.XXX)
 
@@ -705,8 +703,5 @@ clean-all: clean clean-baidu-zip clean-autopatch
 
 ################### autofix ##############################
 include $(PORT_BUILD)/autofix.mk
-
-################### otadiff ##############################
-include $(PORT_BUILD)/otadiff.mk
 
 #$(info # ------------------------------------------------------------------)
