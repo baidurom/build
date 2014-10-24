@@ -44,18 +44,17 @@ autocom_prepare_merged $(AUTOCOM_PREPARE_MERGED): $(AUTOCOM_PREPARE_VENDOR) $(AU
 	$(hide) ls $(AUTOCOM_BAIDU)/* 2>&1 > /dev/null; if [ "$$?" = "0" ]; then cp -rf $(AUTOCOM_BAIDU)/* $(AUTOCOM_MERGED); fi
 	$(hide) touch $(AUTOCOM_PREPARE_MERGED)
 
-autocom $(AUTOCOM_PRECONDITION): $(AUTOCOM_PREPARE_BAIDU) $(AUTOCOM_PREPARE_VENDOR) $(AUTOCOM_PREPARE_MERGED)
-	@echo ">>> checking precondition for autocomplete missed methods ..."
+autofix $(AUTOCOM_PRECONDITION): $(AUTOCOM_PREPARE_BAIDU) $(AUTOCOM_PREPARE_VENDOR) $(AUTOCOM_PREPARE_MERGED)
+	@echo ">>> autocomplete missed methods ..."
 	$(hide) rm -rf $(AUTOCOM_PRECONDITION)
-	$(if $(NEED_COMPELETE_MODULE),$(SCHECK) --autocomplete \
+	$(hide) $(if $(NEED_COMPELETE_MODULE),$(SCHECK) --autocomplete \
 				$(AUTOCOM_VENDOR) \
-				$(AOSP_DIR) \
+				autopatch/aosp \
 				$(AUTOCOM_BAIDU) \
 				$(AUTOCOM_MERGED) \
 				$(PRJ_ROOT) \
 				$(NEED_COMPELETE_MODULE),)
 	$(hide) touch $(AUTOCOM_PRECONDITION)
-	@echo "<<< checking precondition for autocomplete missed methods Done."
 
 # auto fix reject
 AUTOFIX_TARGET_LIST := $(patsubst %,%.jar.out,$(vendor_modify_jars))
@@ -64,8 +63,8 @@ AUTOFIX_OBJ_TARGET_LIST := $(patsubst %,$(AUTOFIX_TARGET)/%,$(AUTOFIX_TARGET_LIS
 
 .PHONY: autofix_check
 autofix_check:
-	$(hide) if [ ! -d $(OUT_DIR)/reject ]; then \
-				echo ">>>> Error: $(OUT_DIR)/reject doesn't exist! You need run 'make patchall' first!"; \
+	$(hide) if [ ! -d $(PRJ_ROOT)/autopatch/reject ]; then \
+				echo ">>>> Error: reject doesn't exist! You need run 'make patchall' first!"; \
 				exit 1; \
 			fi;
 	$(hide) if [ ! -d autopatch/bosp ]; then \
@@ -111,15 +110,15 @@ endef
 
 $(AUTOFIX_PYTHON_JOB): autofix_prepare_target
 	$(hide) rm -rf $(AUTOFIX_OUT)
-	$(hide) rm -rf $(OUT_DIR)/.reject_bak
-	$(hide) cp -rf $(OUT_DIR)/reject $(OUT_DIR)/.reject_bak
+	$(hide) rm -rf autopatch/.reject_bak
+	$(hide) cp -rf autopatch/reject autopatch/.reject_bak
 	$(hide) $(AUTOFIX_TOOL)
-	$(hide) rm -rf $(OUT_DIR)/reject
-	$(hide) mv $(OUT_DIR)/.reject_bak $(OUT_DIR)/reject
+	$(hide) rm -rf autopatch/reject
+	$(hide) mv autopatch/.reject_bak autopatch/reject
 	$(hide) touch $(AUTOFIX_PYTHON_JOB)
 
-.PHONY: autofix
-autofix $(AUTOFIX_JOB): $(AUTOFIX_PYTHON_JOB)
+.PHONY: fixreject
+fixreject $(AUTOFIX_JOB): $(AUTOFIX_PYTHON_JOB)
 	$(call copy_obj_target_to_device)
 
 $(SMALI_TO_BOSP_PYTHON_JOB): autofix_prepare_target_internal

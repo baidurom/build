@@ -1,6 +1,6 @@
 # This file is auto generate by tools/config/config_prebuilt.py
-# version: from 573038(Galaxy Nexus) ==> I9250_D_2.3.58.45(i9250-GN)
-# Date: 2014/09/27 02:38
+# version: from 573038(Galaxy Nexus) ==> I9250_D_2.3.59.36(i9250-GN)
+# Date: 2014/10/17 16:52
 
 BAIDU_PREBUILT_DIRS += \
     etc/defaultTheme \
@@ -20,7 +20,6 @@ BAIDU_PREBUILT += \
     app/BaiduCamera.apk \
     app/BaiduClickSearch.apk \
     app/BaiduClock.apk \
-    app/BaiduDirectShare.apk \
     app/BaiduFlashlight.apk \
     app/BaiduGallery3D.apk \
     app/BaiduInput.apk \
@@ -41,7 +40,6 @@ BAIDU_PREBUILT += \
     app/BaiduTts.apk \
     app/BaiduUpdate.apk \
     app/BaiduUserFeedback.apk \
-    app/BaiduVideoEditor.apk \
     app/BaiduVideoPlayer.apk \
     app/BaiduWallet.apk \
     app/Calendar.apk \
@@ -449,6 +447,7 @@ BAIDU_PRESIGNED_APPS += \
     BaiduInput.apk \
     BaiduMap.apk \
     BaiduNetworkLocation.apk \
+    Calendar.apk \
     GameCenter.apk \
     SearchBox.apk \
     YiYueDu.apk \

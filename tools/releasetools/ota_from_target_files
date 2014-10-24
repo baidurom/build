@@ -381,6 +381,13 @@ def MakeRecoveryPatch(output_zip, recovery_img, boot_img):
   Returns an Item for the shell script, which must be made
   executable.
   """
+  if "make_recovery_patch" in OPTIONS.info_dict.keys():
+    if cmp("true", OPTIONS.info_dict["make_recovery_patch"]) != 0:
+      print ">>> Not create recovery-from-boot.p"
+      return
+  else:
+    print ">>> Not create recovery-from-boot.p"
+    return
 
   d = common.Difference(recovery_img, boot_img)
   _, _, patch = d.ComputePatch()

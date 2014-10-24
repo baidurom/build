@@ -36,7 +36,6 @@ BAIDU_UPDATE_RES_APPS += \
 	app/Mms.apk \
 	app/P2P.apk \
 	app/BaiduDualCardSetting.apk \
-	app/Calendar.apk \
 	app/SceneMode.apk \
 	app/PackageInstaller.apk \
 	framework/android.policy.jar \

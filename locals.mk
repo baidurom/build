@@ -165,7 +165,7 @@ FRW_RES_DECODE        := $(OUT_OBJ_RES)/frw_res_decode
 FRW_RES_DECODE_MERGED := $(FRW_RES_DECODE)/merged
 FRW_RES_DECODE_VENDOR := $(FRW_RES_DECODE)/vendor
 FRW_RES_DECODE_BAIDU  := $(FRW_RES_DECODE)/baidu
-PREPARE_FRW_RES_JOB   := $(FRW_RES_DECODE)/.done
+PREPARE_FRW_RES_JOB   := $(FRW_RES_DECODE)/done
 
 BAIDU_PUBLIC_XML  := $(FRW_RES_DECODE_BAIDU)/framework-res/res/values/public.xml
 VENDOR_PUBLIC_XML := $(FRW_RES_DECODE_VENDOR)/framework-res/res/values/public.xml

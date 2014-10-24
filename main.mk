@@ -211,6 +211,12 @@ $(foreach frw_res_pair,$(PREPARE_FRW_APKS),\
 
 $(PREPARE_FRW_RES_JOB): $(PREPARE_FRW_RES_TARGET)
 $(PREPARE_FRW_RES_JOB):
+	$(hide) for frw_res_target in $(PREPARE_FRW_RES_TARGET); do \
+				if [ ! -e $$frw_res_target ];then \
+					mkdir -p `dirname $$frw_res_target`; \
+					touch $$frw_res_target; \
+				fi \
+			done
 	$(hide) mkdir -p `dirname $@`
 	$(hide) touch $@
 
@@ -240,7 +246,6 @@ ifeq ($(ALL_FRW_NAME_TO_ID),true)
 	$(hide) for frw_res in $(OTHER_FRW_RES); do \
 				if [ -f $(FRW_RES_DECODE_MERGED)/$$frw_res/res/values/public.xml ] && \
 					[ -f $(FRW_RES_DECODE_BAIDU)/$$frw_res/res/values/public.xml ]; then \
-						echo "Gen MAP TLX"; \
 						$(GENMAP_TOOL) -map $(FRW_RES_DECODE_MERGED)/$$frw_res/res/values/public.xml \
 								$(FRW_RES_DECODE_BAIDU)/$$frw_res/res/values/public.xml \
 								$(TMP_UPDATE) $(TMP_NONE); \
@@ -289,29 +294,32 @@ $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: minSdkVersion := $(shell $(call getM
 																$(VENDOR_FRAMEWORK_RES_OUT)/apktool.yml))
 $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: targetSdkVersion := $(shell $(call getTargetSdkVersionFromApktoolYml,\
 																$(VENDOR_FRAMEWORK_RES_OUT)/apktool.yml))
+$(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: OUT_OBJ_FRAMEWORK_RES := $(OUT_OBJ_FRAMEWORK)/framework-res
 $(OUT_OBJ_FRAMEWORK)/framework-res.apk.tmp: $(FRAMEWORK_RES_SOURCE) 
 	$(hide) echo ">>> start auto merge framework-res"
-	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK)
-	$(hide) rm -rf $(OUT_OBJ_FRAMEWORK)/baidu-res-overlay
-	$(hide) cp -rf $(BAIDU_FRAMEWORK_OVERLAY) $(OUT_OBJ_FRAMEWORK)/baidu-res-overlay
-	$(hide) $(call formatOverlay,$(OUT_OBJ_FRAMEWORK)/baidu-res-overlay)
+	$(hide) rm -rf $(OUT_OBJ_FRAMEWORK_RES)
+	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK_RES)
+	$(hide) cp -rf $(BAIDU_FRAMEWORK_OVERLAY) $(OUT_OBJ_FRAMEWORK_RES)/baidu-res-overlay
+	$(hide) $(call formatOverlay,$(OUT_OBJ_FRAMEWORK_RES)/baidu-res-overlay)
 	$(hide) $(if $(PRJ_FRAMEWORK_OVERLAY_SOURCES), \
-				rm -rf $(OUT_OBJ_FRAMEWORK)/project-res-overlay; \
-				cp -rf $(PRJ_FRAMEWORK_OVERLAY) $(OUT_OBJ_FRAMEWORK)/project-res-overlay; \
-				$(call formatOverlay,$(OUT_OBJ_FRAMEWORK)/project-res-overlay);,)
+				cp -rf $(PRJ_FRAMEWORK_OVERLAY) $(OUT_OBJ_FRAMEWORK_RES)/project-res-overlay; \
+				$(call formatOverlay,$(OUT_OBJ_FRAMEWORK_RES)/project-res-overlay);,)
+	$(hide) cp $(VENDOR_FRAMEWORK_RES_OUT)/AndroidManifest.xml $(OUT_OBJ_FRAMEWORK_RES)/AndroidManifest.xml;
+	$(hide) sed -i 's/android:versionName[ ]*=[ ]*"[^\"]*"//g' $(OUT_OBJ_FRAMEWORK_RES)/AndroidManifest.xml;
 	$(AAPT) package -u -x -z \
 		$(if $(filter true,$(FULL_RES)),,$(addprefix -c , $(PRIVATE_PRODUCT_AAPT_CONFIG)) \
 										$(addprefix --preferred-configurations , $(PRIVATE_PRODUCT_AAPT_PREF_CONFIG))) \
 		$(if $(minSdkVersion),$(addprefix --min-sdk-version , $(minSdkVersion)),) \
 		$(if $(targetSdkVersion),$(addprefix --target-sdk-version , $(targetSdkVersion)),) \
-		-M $(VENDOR_FRAMEWORK_RES_OUT)/AndroidManifest.xml \
+		$(if $(VERSION_NUMBER),$(addprefix --version-name ,$(VERSION_NUMBER)),) \
+		-M $(OUT_OBJ_FRAMEWORK_RES)/AndroidManifest.xml \
 		-A $(VENDOR_FRAMEWORK_RES_OUT)/assets \
-		$(if $(PRJ_FRAMEWORK_OVERLAY_SOURCES),-S $(OUT_OBJ_FRAMEWORK)/project-res-overlay,)\
-		-S $(OUT_OBJ_FRAMEWORK)/baidu-res-overlay \
+		$(if $(PRJ_FRAMEWORK_OVERLAY_SOURCES),-S $(OUT_OBJ_FRAMEWORK_RES)/project-res-overlay,)\
+		-S $(OUT_OBJ_FRAMEWORK_RES)/baidu-res-overlay \
 		-S $(VENDOR_FRAMEWORK_RES_OUT)/res \
 		-F $@ 1>/dev/null
 	$(hide) echo ">>> aapt done"
-		
+
 
 $(OUT_OBJ_FRAMEWORK)/framework-res.apk: tmpResDir := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/framework-res.XXX)
 
@@ -438,6 +446,8 @@ $(OUT_META)/filesystem_config.txt: $(OUT_OBJ_META)/filesystem_config.txt
 $(OUT_META)/filesystem_config.txt: target-files-system
 	$(hide) echo ">>> update the filesystem_config.txt";
 	$(hide) $(UPDATE_FILE_SYSTEM) $(OUT_OBJ_META)/filesystem_config.txt $(OUT_SYSTEM);
+	$(hide) sed -i "/system\/xbin\/su/d" $(OUT_OBJ_META)/filesystem_config.txt;
+	$(hide) echo "system/xbin/su 0 0 6755" >> $(OUT_OBJ_META)/filesystem_config.txt;
 	$(hide) mkdir -p $(OUT_META);
 	$(hide) cp $(OUT_OBJ_META)/filesystem_config.txt $(OUT_META)/filesystem_config.txt;
 	$(hide) echo ">>> update filesystem done";
@@ -469,6 +479,9 @@ $(OUT_META)/misc_info.txt: $(OUT_OBJ_META)/misc_info.txt $(OUT_RECOVERY_FSTAB)
 			fi;
 	$(hide) if [ x"false" = x"$(strip $(recovery_ota_assert))" ]; then \
 				echo "recovery_ota_assert=false" >> $(OUT_OBJ_META)/misc_info.txt; \
+			fi
+	$(hide) if [ x"true" = x"$(strip $(make_recovery_patch))" ]; then \
+				echo "make_recovery_patch=true" >> $(OUT_OBJ_META)/misc_info.txt; \
 			fi
 	$(hide) mkdir -p $(OUT_META);
 	$(hide) cp $(OUT_OBJ_META)/misc_info.txt $@
@@ -674,7 +687,7 @@ mkuserimg: $(OUT_TARGET_ZIP)
 	$(hide) rm -f $(OUT_DIR)/target-files.signed.zip;
 else
 mkuserimg:
-	$(hide) echo "nothing to do for mksuerimg"
+	$(hide) echo ">>> nothing to do for mksuerimg"
 endif
 
 ##################  server-ota #########################
@@ -703,5 +716,8 @@ clean-all: clean clean-baidu-zip clean-autopatch
 
 ################### autofix ##############################
 include $(PORT_BUILD)/autofix.mk
+
+################### otadiff ##############################
+include $(PORT_BUILD)/otadiff.mk
 
 #$(info # ------------------------------------------------------------------)

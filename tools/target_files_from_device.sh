@@ -154,9 +154,9 @@ function buildApkcerts {
 	fi
     adb pull /data/system/packages.xml $OEM_TARGET_DIR
     python $TOOL_DIR/apkcerts.py $OEM_TARGET_DIR/packages.xml $META_DIR/apkcerts.txt
-    for file in `adb shell ls $SYSTEM_DIR/framework/*.apk`
+    for file in $(adb shell ls /system/framework/*.apk)
     do
-        apk=`basename $file`
+        apk=$(basename $file | tr -d "\015")
         echo "name=\"$apk\" certificate=\"build/security/platform.x509.pem\" private_key=\"build/security/platform.pk8\"" >> $META_DIR/apkcerts.txt
     done
     cat $META_DIR/apkcerts.txt | sort > $META_DIR/temp.txt

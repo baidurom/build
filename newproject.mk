@@ -15,6 +15,10 @@ newproject: prepare-vendor prepare-vendor-boot prepare-vendor-recovery prepare-m
 				cat $(OUT_DIR)/build-info-to-user.txt; \
 			fi
 	$(hide) echo ">>> newproject done"
+	$(hide) echo "========================================================================================"
+	$(hide) echo "Recommended Command:"
+	$(hide) echo "    make vendorota  ->  build a vendor ota package to test whether newproject correctly."
+	$(hide) echo "========================================================================================"
 
 $(OEM_TARGET_ZIP): $(PRJ_RECOVERY_FSTAB)
 	$(hide) $(TARGET_FILES_FROM_DEVICE) target

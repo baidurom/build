@@ -84,6 +84,16 @@ prepare_boot_ramdisk:
 			$(eval src_file := $(call word-colon,1,$(prebuilt_pair)))\
 			$(eval dst_file := $(call word-colon,2,$(prebuilt_pair)))\
 			$(call safe_file_copy,$(src_file),$(dst_file)))
+	$(hide) if [ -f $(OUT_OBJ_BOOT)/RAMDISK/init.rc ];then \
+				if [ `grep "WordSegService" $(OUT_OBJ_BOOT)/RAMDISK/init.rc | wc -l` -lt 1 ];then \
+					echo ">>> add WordSegService in init.rc"; \
+					echo "service WordSegService /system/bin/WordSegService\n    class main\n    oneshot\n" >> $(OUT_OBJ_BOOT)/RAMDISK/init.rc; \
+				fi; \
+				if [ `grep "serviceext" $(OUT_OBJ_BOOT)/RAMDISK/init.rc | wc -l` -lt 1 ];then \
+					echo ">>> add serviceext in init.rc"; \
+					echo "service serviceext /sbin/serviceext\n    class main\n    oneshot\n" >> $(OUT_OBJ_BOOT)/RAMDISK/init.rc; \
+				fi \
+			fi
 
 $(OUT_BOOT_IMG): prepare_boot_ramdisk
 	$(hide) echo ">>> pack $(BOOT_IMG)"
