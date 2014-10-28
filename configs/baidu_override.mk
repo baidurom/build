@@ -33,6 +33,8 @@ BAIDU_UPDATE_RES_APPS += \
 	app/SystemUI.apk \
 	app/Settings.apk \
 	app/Phone.apk \
+	priv-app/InCallUI.apk \
+	priv-app/TeleService.apk \
 	app/Mms.apk \
 	app/P2P.apk \
 	app/BaiduDualCardSetting.apk \
