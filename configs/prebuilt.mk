@@ -1,6 +1,6 @@
 # This file is auto generate by tools/config/config_prebuilt.py
-# version: from 573038(Galaxy Nexus) ==> I9250_D_2.3.59.36(i9250-GN)
-# Date: 2014/10/17 16:52
+# version: from 573038(Galaxy Nexus) ==> I9250_D_2.3.61.23(i9250-GN)
+# Date: 2014/11/09 02:38
 
 BAIDU_PREBUILT_DIRS += \
     etc/defaultTheme \
@@ -62,6 +62,7 @@ BAIDU_PREBUILT += \
     app/YellowPageProvider.apk \
     app/Yellowpages.apk \
     app/YiYueDu.apk \
+    app/cm-sdk-release.apk \
     app/iReader.apk \
     bin/WordSegService \
     bin/audioloop \
@@ -120,6 +121,7 @@ BAIDU_PREBUILT += \
     lib/libbd_wsp_v1_0.so \
     lib/libbdocr.so \
     lib/libbdpush_V2_0.so \
+    lib/libbdpush_V2_2.so \
     lib/libc_malloc_debug_leak.so \
     lib/libc_malloc_debug_qemu.so \
     lib/libcyberplayer-core.so \
@@ -451,6 +453,7 @@ BAIDU_PRESIGNED_APPS += \
     GameCenter.apk \
     SearchBox.apk \
     YiYueDu.apk \
+    cm-sdk-release.apk \
     iReader.apk \
 
 
