@@ -88,10 +88,10 @@ OPTIONS.extra_script = None
 OPTIONS.aslr_mode = True
 OPTIONS.worker_threads = 3
 OPTIONS.cust_boot=False
-#wschen
 OPTIONS.logo = None
 OPTIONS.formatNum = "5"
 OPTIONS.sign_ota = True
+OPTIONS.prebuilt = None
 
 def MostPopularKey(d, default):
   """Given a dict, return the key corresponding to the largest
@@ -327,6 +327,7 @@ def SignOutput(temp_zip_name, output_zip_name):
   key_passwords = common.GetKeyPasswords([OPTIONS.package_key])
   pw = key_passwords[OPTIONS.package_key]
 
+  print ">>> Sign ota package with key:", OPTIONS.package_key, "..."
   common.SignFile(temp_zip_name, output_zip_name, OPTIONS.package_key, pw,
                   whole_file=True)
 
@@ -459,6 +460,7 @@ def WriteFullOTAPackage(input_zip, output_zip):
   script.UnpackPackageDir("recovery", "/system")
 
   script.Print("Creating system links...")
+  print ">>> Copy system files to package ..."
   (symlinks, retouch_files) = CopySystemFiles(input_zip, output_zip)
   script.MakeSymlinks(symlinks)
   # if OPTIONS.aslr_mode:
@@ -498,13 +500,20 @@ def WriteFullOTAPackage(input_zip, output_zip):
   if boot_img and not device_specific.WriteRawImage("/boot", "boot.img"):
     script.WriteRawImage("/boot", "boot.img")
 
-#wschen start
   if OPTIONS.logo is not None:
     if os.path.exists(OPTIONS.logo):
       logo_img = open(OPTIONS.logo).read()
       common.ZipWriteStr(output_zip, "logo.img", logo_img)
       script.WriteRawImage2("logo", "logo.img")
-  #wschen end
+
+  if OPTIONS.prebuilt is not None:
+    if os.path.exists(OPTIONS.prebuilt):
+      print ">>> Copy prebuilt images into ota package"
+      for root, dirs, files in os.walk(OPTIONS.prebuilt):
+            dirs[:] = []
+            for f in files:
+              file_img = open(os.path.join(root, f)).read()
+              common.ZipWriteStr(output_zip, f, file_img)
 
   script.ShowProgress(0.1, 0)
   device_specific.FullOTA_InstallEnd()
@@ -873,6 +882,8 @@ def main(argv):
       OPTIONS.logo = a
     elif o in ("-f", "--formatNum"):
       OPTIONS.formatNum = a
+    elif o in ("--prebuilt"):
+      OPTIONS.prebuilt = a
     elif o in ("--no_sign"):
       OPTIONS.sign_ota = False
     else:

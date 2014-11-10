@@ -35,6 +35,7 @@ BAIDU_UPDATE_RES_APPS += \
 	app/Phone.apk \
 	priv-app/InCallUI.apk \
 	priv-app/TeleService.apk \
+        priv-app/Keyguard.apk \
 	app/Mms.apk \
 	app/P2P.apk \
 	app/BaiduDualCardSetting.apk \
@@ -63,16 +64,15 @@ BAIDU_PROPERTY_FOLLOW_BASE := \
 	ro.baidu.build.hardware.version \
 	ro.baidu.build.software \
 	ro.baidu.build.version.release \
-	ro.build.version.release \
 	ro.baidu.recovery.verify \
 	ro.baidu.build.hardware.version \
 	ro.baidu.build.software \
 	ro.baidu.build.version.release \
-	ro.product.manufacturer \
 	ro.config.notification_sound \
 	ro.config.ringtone \
 	ro.config.alarm_alert \
 	ro.config.rootperm.enable \
+	ro.call.record \
 	persist.sys.timezone
 
 BAIDU_SERVICES += \

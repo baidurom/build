@@ -19,25 +19,25 @@ $(foreach mk, \
 
 .PHONY: target-files framework-res bootimage recoveryimage
 
-.PHONY: otapackage ota fullota
+.PHONY: otapackage ota fullota newota
 
 ifeq ($(strip $(wildcard $(BAIDU_SYSTEM))),)
 #$(info # no source directory, need $(PREPARE_SOURCE))
 ota fullota otapackage: check-project $(PREPARE_SOURCE)
-	$(hide) cd $(PRJ_ROOT) && $(MAKE) ota-files-zip
-else
-ifneq ($(strip $(serverdir)),)
-#$(info # serverdir is not null, need $(PREPARE_SOURCE): $(serverdir))
-ota fullota otapackage: check-project $(PREPARE_SOURCE)
-	$(hide) cd $(PRJ_ROOT) && $(MAKE) ota-files-zip
 else
 ota fullota otapackage: check-project
-	$(hide) cd $(PRJ_ROOT) && $(MAKE) ota-files-zip
 endif
-endif
-
 newota: check-project prepare-new-source
+
+ota fullota otapackage newota:
 	$(hide) cd $(PRJ_ROOT) && $(MAKE) ota-files-zip
+	@echo "=========================================================================="
+	@echo "Recommend Commands:                                                       "
+	@echo "   make otadiff => build an Incremental OTA Package, with preparing       "
+	@echo "         target_files.zip of previous version in current directory.       "
+	@echo "   make otadiff PRE=xx/xx/target_files_xx.zip => specify previous package."
+	@echo "   make otadiff PRE=xx/xx/ota_xx.zip => specify previous ota package.     "
+	@echo "=========================================================================="
 
 ifeq ($(strip $(WITH_DEXPREOPT)),true)
 NEED_SIGNED_TARGET_ZIP := $(PRJ_TARGET_FILE_ODEX)
@@ -78,7 +78,7 @@ clean-out:
 
 CLEAN_TARGETS += clean-source
 
-CLEAN_SOURCE_REMOVE_TARGETS := $(patsubst %,$(BAIDU_DIR)/%,$(filter-out $(notdir $(BAIDU_ZIP) $(BAIDU_BASE_ZIP) $(BAIDU_LAST_ZIP) $(THEME_RES)) \
+CLEAN_SOURCE_REMOVE_TARGETS := $(patsubst %,$(BAIDU_DIR)/%,$(filter-out $(notdir $(BAIDU_ZIP) $(BAIDU_LAST_ZIP) $(THEME_RES)) \
                                     timestamp,$(shell if [ -d $(BAIDU_DIR) ]; then ls $(BAIDU_DIR); fi)))
 .PHONY: clean-source
 clean-source:
@@ -107,11 +107,8 @@ TARGET_FILES_SYSTEM += bootimage recoveryimage
 ################### newproject #########################
 include $(PORT_BUILD)/newproject.mk
 
-################ get-new-package #######################
-# include get_new_package.mk for get the package from server
-ifneq ($(wildcard $(PORT_BUILD)/get_new_package.mk),)
-include $(PORT_BUILD)/get_new_package.mk
-endif
+################ prepare baidu source ##################
+include $(PORT_BUILD)/prepare_baidu.mk
 
 #################   prebuilt   #########################
 # get all of the files from source/system
@@ -188,31 +185,51 @@ $(IF_MERGED_RES): $(FRAMEWORK_APKS_TARGETS)
 	$(hide) mkdir -p `dirname $@`
 	$(hide) touch $@
 
-ifeq ($(ALL_FRW_NAME_TO_ID),true)
-PREPARE_FRW_APKS := $(patsubst %,$(FRW_RES_DECODE_MERGED):%,$(FRAMEWORK_APKS_TARGETS))
-PREPARE_FRW_APKS += $(patsubst %,$(FRW_RES_DECODE_BAIDU):%,$(BAIDU_FRAMEWORK_APKS))
-PREPARE_FRW_APKS += $(patsubst %,$(FRW_RES_DECODE_VENDOR):%,$(VENDOR_FRAMEWORK_APKS))
-else
-PREPARE_FRW_APKS := $(FRW_RES_DECODE_MERGED):$(OUT_OBJ_FRAMEWORK)/framework-res.apk
-PREPARE_FRW_APKS += $(FRW_RES_DECODE_BAIDU):$(BAIDU_FRAMEWORK_RES)
-PREPARE_FRW_APKS += $(FRW_RES_DECODE_VENDOR):$(VENDOR_FRAMEWORK_RES)
-endif
+BAIDU_FRW_APK_NAMES :=
+VENDOR_FRW_APK_NAMES :=
+MERGED_FRW_APK_NAMES :=
 
-$(foreach frw_res,$(FRAMEWORK_APKS_TARGETS),\
-	$(eval $(if $(filter-out 3,$(words $(filter %/$(call getBaseName,$(frw_res)).apk,$(PREPARE_FRW_APKS)))),,BOTH_OWN_RES += $(call getBaseName,$(frw_res)))))
+$(foreach frw_res, $(BAIDU_FRAMEWORK_APKS),   $(eval BAIDU_FRW_APK_NAMES  += $(call getBaseName, $(frw_res))))
+$(foreach frw_res, $(VENDOR_FRAMEWORK_APKS),  $(eval VENDOR_FRW_APK_NAMES += $(call getBaseName, $(frw_res))))
+$(foreach frw_res, $(FRAMEWORK_APKS_TARGETS), $(eval MERGED_FRW_APK_NAMES += $(call getBaseName, $(frw_res))))
 
-$(foreach frw_res_pair,$(PREPARE_FRW_APKS),\
-	$(eval frw_res := $(call word-colon,2,$(frw_res_pair))) \
-	$(eval targetDir := $(call word-colon,1,$(frw_res_pair))/$(call getBaseName,$(frw_res))) \
-	$(eval $(call decode_merged,$(frw_res),$(targetDir))) \
+$(foreach frw_res, $(MERGED_FRW_APK_NAMES), \
+	$(eval $(if $(filter 3, $(words $(filter $(frw_res), $(BAIDU_FRW_APK_NAMES) $(VENDOR_FRW_APK_NAMES) $(MERGED_FRW_APK_NAMES)))),BOTH_OWN_RES += $(frw_res))))
+
+$(foreach frw_res, $(BOTH_OWN_RES), \
+	$(eval frw_res_apk := $(BAIDU_FRAMEWORK)/$(frw_res).apk) \
+	$(eval targetDir := $(FRW_RES_DECODE_BAIDU)/$(frw_res)) \
+	$(eval $(call decode_baidu,$(frw_res_apk),$(targetDir))) \
 	$(eval PREPARE_FRW_RES_TARGET += $(targetDir)/apktool.yml))
+
+$(foreach frw_res, $(BOTH_OWN_RES), \
+	$(eval frw_res_apk := $(VENDOR_FRAMEWORK)/$(frw_res).apk) \
+	$(eval targetDir := $(FRW_RES_DECODE_VENDOR)/$(frw_res)) \
+	$(eval $(call decode_vendor,$(frw_res_apk),$(targetDir))) \
+	$(eval PREPARE_FRW_RES_TARGET += $(targetDir)/apktool.yml))
+
+$(foreach frw_res, $(BOTH_OWN_RES), \
+	$(eval frw_res_apk := $(OUT_SYSTEM_FRAMEWORK)/$(frw_res).apk) \
+	$(eval targetDir := $(FRW_RES_DECODE_MERGED)/$(frw_res)) \
+	$(eval $(call decode_merged,$(frw_res_apk),$(targetDir))) \
+	$(eval PREPARE_FRW_RES_TARGET += $(targetDir)/apktool.yml))
+
+ifeq ($(ALL_FRW_NAME_TO_ID),true)
+NOT_BOTH_OWN_RES := $(filter-out $(BOTH_OWN_RES), $(MERGED_FRW_APK_NAMES))
+
+$(foreach frw_res, $(NOT_BOTH_OWN_RES), \
+	$(eval frw_res_apk := $(OUT_SYSTEM_FRAMEWORK)/$(frw_res).apk) \
+	$(eval targetDir := $(FRW_RES_DECODE_MERGED)/$(frw_res)) \
+	$(eval $(call decode_merged,$(frw_res_apk),$(targetDir))) \
+	$(eval PREPARE_FRW_RES_TARGET += $(targetDir)/apktool.yml))
+endif
 
 .IGNORE: $(PREPARE_FRW_RES_TARGET)
 
 $(PREPARE_FRW_RES_JOB): $(PREPARE_FRW_RES_TARGET)
-$(PREPARE_FRW_RES_JOB):
 	$(hide) for frw_res_target in $(PREPARE_FRW_RES_TARGET); do \
 				if [ ! -e $$frw_res_target ];then \
+					echo ">>> WARNING: Failed to create $$frw_res_target, because of decode failure"; \
 					mkdir -p `dirname $$frw_res_target`; \
 					touch $$frw_res_target; \
 				fi \
@@ -242,7 +259,6 @@ $(MERGE_UPDATE_TXT): $(PREPARE_FRW_RES_JOB)
 	$(hide) mkdir -p $(TMP_OUT_DIR)
 	$(hide) $(DIFFMAP_TOOL) -map $(VENDOR_PUBLIC_XML) \
 		$(MERGED_PUBLIC_XML) $(BAIDU_PUBLIC_XML) $(TMP_OUT_DIR) > /dev/null
-ifeq ($(ALL_FRW_NAME_TO_ID),true)
 	$(hide) for frw_res in $(OTHER_FRW_RES); do \
 				if [ -f $(FRW_RES_DECODE_MERGED)/$$frw_res/res/values/public.xml ] && \
 					[ -f $(FRW_RES_DECODE_BAIDU)/$$frw_res/res/values/public.xml ]; then \
@@ -255,7 +271,6 @@ ifeq ($(ALL_FRW_NAME_TO_ID),true)
 						rm -rf $(TMP_UPDATE) $(TMP_NONE); \
 				fi; \
 			done
-endif
 	$(hide) mv $(TMP_OUT_DIR)/* $(TXT_OUT_DIR)
 	$(hide) rm -rf $(TMP_OUT_DIR)
 	$(hide) echo ">>> generate merged txts done"
@@ -477,11 +492,14 @@ $(OUT_META)/misc_info.txt: $(OUT_OBJ_META)/misc_info.txt $(OUT_RECOVERY_FSTAB)
 				sed -i '/^fstab_version[ \t]*=.*/d' $(OUT_OBJ_META)/misc_info.txt; \
 				echo "fstab_version=1" >> $(OUT_OBJ_META)/misc_info.txt; \
 			fi;
-	$(hide) if [ x"false" = x"$(strip $(recovery_ota_assert))" ]; then \
+	$(hide) if [ x"false" = x"$(strip $(RECOVERY_OTA_ASSERT))" ]; then \
 				echo "recovery_ota_assert=false" >> $(OUT_OBJ_META)/misc_info.txt; \
 			fi
-	$(hide) if [ x"true" = x"$(strip $(make_recovery_patch))" ]; then \
+	$(hide) if [ x"true" = x"$(strip $(MAKE_RECOVERY_PATCH))" ]; then \
 				echo "make_recovery_patch=true" >> $(OUT_OBJ_META)/misc_info.txt; \
+			fi
+	$(hide) if [ x"true" != x"$(strip $(SIGN_OTA))" ]; then \
+				echo "not_sign_ota=true" >> $(OUT_OBJ_META)/misc_info.txt; \
 			fi
 	$(hide) mkdir -p $(OUT_META);
 	$(hide) cp $(OUT_OBJ_META)/misc_info.txt $@
@@ -599,7 +617,14 @@ $(OUT_LOGO_BIN): $(PRJ_LOGO_BIN)
 	$(hide) cp $(PRJ_LOGO_BIN) $(OUT_LOGO_BIN)
 endif
 
-##################### baidu_service #########################
+##################### prebuilt ##########################
+ifeq ($(strip $(wildcard $(PRJ_PREBUILT_OVERLAY))),)
+PREBUILT_PARAM :=
+else
+PREBUILT_PARAM := --prebuilt $(PRJ_PREBUILT_OVERLAY)
+endif
+
+################### baidu_service #######################
 ifneq ($(strip $(USER)),baidu)
 TARGET_FILES_SYSTEM += $(OUT_SYSTEM_BIN)/baidu_service
 else ifeq ($(strip $(filter boot boot.img, $(vendor_modify_images))),)
@@ -669,6 +694,7 @@ $(PRJ_FULL_OTA_ZIP): $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
 			$(SIGN_OTA_PARAM) \
 			-n -k $(OTA_CERT) \
 			$(LOGO_BIN_PARAM) \
+			$(PREBUILT_PARAM) \
 			$(OUT_TARGET_ZIP) \
 			$(PRJ_FULL_OTA_ZIP) || exit 51
 
@@ -687,7 +713,7 @@ mkuserimg: $(OUT_TARGET_ZIP)
 	$(hide) rm -f $(OUT_DIR)/target-files.signed.zip;
 else
 mkuserimg:
-	$(hide) echo ">>> nothing to do for mksuerimg"
+	$(hide) echo ">>> nothing to do for mkuserimg"
 endif
 
 ##################  server-ota #########################

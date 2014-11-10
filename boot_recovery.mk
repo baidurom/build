@@ -9,6 +9,7 @@ ERR_NOT_PREPARE_BOOT_IMG=212
 
 UNPACK_BOOT_PY := $(PORT_ROOT)/tools/bootimgpack/unpack_bootimg.py
 PACK_BOOT_PY := $(PORT_ROOT)/tools/bootimgpack/pack_bootimg.py
+BAIDU_SERVICE_PART := $(PORT_ROOT)/tools/bootimgpack/init.rc.part
 
 ######################## boot #############################
 BOOT_IMG                 := boot.img
@@ -85,13 +86,10 @@ prepare_boot_ramdisk:
 			$(eval dst_file := $(call word-colon,2,$(prebuilt_pair)))\
 			$(call safe_file_copy,$(src_file),$(dst_file)))
 	$(hide) if [ -f $(OUT_OBJ_BOOT)/RAMDISK/init.rc ];then \
-				if [ `grep "WordSegService" $(OUT_OBJ_BOOT)/RAMDISK/init.rc | wc -l` -lt 1 ];then \
-					echo ">>> add WordSegService in init.rc"; \
-					echo "service WordSegService /system/bin/WordSegService\n    class main\n    oneshot\n" >> $(OUT_OBJ_BOOT)/RAMDISK/init.rc; \
-				fi; \
-				if [ `grep "serviceext" $(OUT_OBJ_BOOT)/RAMDISK/init.rc | wc -l` -lt 1 ];then \
-					echo ">>> add serviceext in init.rc"; \
-					echo "service serviceext /sbin/serviceext\n    class main\n    oneshot\n" >> $(OUT_OBJ_BOOT)/RAMDISK/init.rc; \
+				if [ `grep "WordSegService" $(OUT_OBJ_BOOT)/RAMDISK/init.rc | wc -l` -lt 1 \
+					-o `grep "serviceext" $(OUT_OBJ_BOOT)/RAMDISK/init.rc | wc -l` -lt 1 ];then \
+					echo ">>> add Baidu Service in init.rc"; \
+					cat $(BAIDU_SERVICE_PART) >> $(OUT_OBJ_BOOT)/RAMDISK/init.rc; \
 				fi \
 			fi
 

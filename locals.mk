@@ -99,14 +99,9 @@ PRIVATE_PRODUCT_AAPT_CONFIG := $(subst $(space),$(comma),$(sort normal,nodpi,$(P
 
 PRIVATE_PRODUCT_AAPT_PREF_CONFIG := $(DENSITY)
 
-ifeq ($(ALL_FRW_NAME_TO_ID),)
-ALL_FRW_NAME_TO_ID := true
-endif
-
 ##################### baidu zip ###########################
 BAIDU_DIR          := $(PRJ_ROOT)/baidu
 BAIDU_ZIP          := $(BAIDU_DIR)/baidu.zip
-BAIDU_BASE_ZIP     := $(BAIDU_DIR)/baidu.deodex.zip
 BAIDU_LAST_ZIP     := $(BAIDU_DIR)/last_baidu.zip
 
 ifeq ($(strip $(THEME_RES)),)
@@ -214,16 +209,18 @@ OUT_SYSTEM_LIB       := $(OUT_SYSTEM)/lib
 OUT_SYSTEM_BIN       := $(OUT_SYSTEM)/bin
 OUT_BUILD_PROP       := $(OUT_SYSTEM)/build.prop
 
-################ refernce ######################
+####################### refernce ##########################
 BAIDU_RELEASE := $(PORT_ROOT)/baidu/release
 
 ################# target-files zips #######################
 PRJ_OUT_TARGET_ZIP := $(OUT_DIR)/target-files.zip
+PRE_TARGET_ZIP := target-files.zip
 
 ################ overlay for project ######################
 PRJ_OVERLAY           := overlay
 PRJ_FRAMEWORK_OVERLAY := $(PRJ_OVERLAY)/framework-res/res
 PRJ_OTA_OVERLAY       := $(PRJ_OVERLAY)/OTA
+PRJ_PREBUILT_OVERLAY  := $(PRJ_OVERLAY)/prebuilt
 
 PRJ_META_INF_OVERLAY       := $(PRJ_OVERLAY)/META-INF/com/google/android
 PRJ_UPDATE_BINARY_OVERLAY  := $(PRJ_META_INF_OVERLAY)/update-binary
@@ -348,6 +345,7 @@ SIGN_TOOL                := $(PORT_BUILD_TOOLS)/sign.sh
 PORT_CUSTOM_APP          := $(PORT_BUILD_TOOLS)/custom_app.sh
 PORT_CUSTOM_JAR          := $(PORT_BUILD_TOOLS)/custom_jar.sh
 PORT_CUSTOM_BAIDU_ZIP    := $(PORT_BUILD_TOOLS)/custom_baidu_zip.sh
+PORT_CUSTOM_TARGET_FILES := $(PORT_BUILD_TOOLS)/custom_target_files.sh
 PORT_PREPARE_CUSTOM_JAR  := $(PORT_BUILD_TOOLS)/prepare_custom_jar.sh
 
 TESTKEY_PEM := $(PORT_BUILD)/security/testkey.x509.pem

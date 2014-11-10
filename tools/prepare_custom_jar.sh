@@ -22,6 +22,6 @@ if [ "$jarBaseName" = "android.policy" ];then
 		$MODIFY_ID_TOOL $MERGE_UPDATE_TXT $tempYi
 		
 		#echo ">>> copy framework-yi.jar's package(`cd $tempYi/smali/ >/dev/null; find -type d; cd - > /dev/null`) to android.policy.jar"
-		cp -rf $tempYi/smali/* $tempSmaliDir
+		cp -rf $tempYi/smali $tempSmaliDir
 	fi
 fi

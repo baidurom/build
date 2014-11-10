@@ -116,7 +116,7 @@ $(VENDOR_TARGET_ZIP): $(VENDOR_RECOVERY_FSTAB)
 	$(hide) rm -rf $(VENDOR_TARGET_ZIP).tmp
 	$(hide) mv $(VENDOR_TARGET_DIR)/system $(VENDOR_TARGET_DIR)/SYSTEM
 	$(hide) rm -rf $(VENDOR_TARGET_DIR)/BOOTABLE_IMAGES/ $(VENDOR_TARGET_DIR)/BOOT
-	$(hide) if [ x"false" = x"$(strip $(recovery_ota_assert))" ]; then \
+	$(hide) if [ x"false" = x"$(strip $(RECOVERY_OTA_ASSERT))" ]; then \
 				echo "recovery_ota_assert=false" >> $(VENDOR_TARGET_DIR)/META/misc_info.txt; \
 			fi
 	$(hide) cd $(VENDOR_TARGET_DIR); zip -qry $(PRJ_ROOT)/$(VENDOR_TARGET_ZIP) *; cd - > /dev/null

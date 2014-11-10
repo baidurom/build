@@ -8,6 +8,11 @@ endif
 
 include $(PORT_BUILD)/generate_define.mk
 
+# apktool install framework resouce apks, normal used
+define apktool_if_dir
+$(INSTALL_FRAMEWORKS) $(1)
+endef
+
 # apktool install framework in source/system/framework
 # which are baidu's framework resource apk
 # such as framework-res.apk, framework-res-yi.apk
@@ -21,10 +26,6 @@ endef
 define apktool_if_vendor
 rm -rf ~/apktool/framework/[1-9]-$(APKTOOL_VENDOR_TAG).apk;\
 $(INSTALL_FRAMEWORKS) $(1) $(APKTOOL_VENDOR_TAG)
-endef
-
-define apktool_if_dir
-$(INSTALL_FRAMEWORKS) $(1)
 endef
 
 # apktool install framework resouce apks in out/merged_target_files/SYSTEM/framework
@@ -42,18 +43,22 @@ endef
 
 define decode_baidu
 $(2)/apktool.yml: $(IF_BAIDU_RES) $(1)
+#	@echo ">>> decode_baidu $(1) to $(2)"
 $(call decode,$(1),$(2),$(APKTOOL_BAIDU_TAG))
 endef
 
 define decode_vendor
 $(2)/apktool.yml: $(IF_VENDOR_RES) $(1)
+#	@echo ">>> decode_vendor $(1) to $(2)"
 $(call decode,$(1),$(2),$(APKTOOL_VENDOR_TAG))
 endef
 
 define decode_merged
 $(2)/apktool.yml: $(IF_MERGED_RES) $(1)
+#	@echo ">>> decode_merged $(1) to $(2)"
 $(call decode,$(1),$(2),$(APKTOOL_MERGED_TAG))
 endef
+
 
 # used for aapt to merged resouce
 define get_baidu_installed_framework_params
@@ -330,8 +335,11 @@ define custom_post
 		mkdir -p $(OUT_DATA); \
 		cp -rf $(PRJ_DATA_PREBUILT_DIR)/* $(OUT_DATA);\
 	fi; \
+	if [ -f $(PORT_CUSTOM_TARGET_FILES) ];then \
+		$(PORT_CUSTOM_TARGET_FILES) $(OUT_TARGET_DIR); \
+	fi; \
 	if [ -f $(PRJ_CUSTOM_TARGETFILES) ];then \
-		$(PRJ_CUSTOM_TARGETFILES); \
+		$(PRJ_CUSTOM_TARGETFILES) $(OUT_TARGET_DIR); \
 	fi
 endef
 
