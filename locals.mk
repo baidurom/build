@@ -99,6 +99,9 @@ PRIVATE_PRODUCT_AAPT_CONFIG := $(subst $(space),$(comma),$(sort normal,nodpi,$(P
 
 PRIVATE_PRODUCT_AAPT_PREF_CONFIG := $(DENSITY)
 
+###################### Makefile ###########################
+PRJ_MAKEFILE       := $(PRJ_ROOT)/Makefile
+
 ##################### baidu zip ###########################
 BAIDU_DIR          := $(PRJ_ROOT)/baidu
 BAIDU_ZIP          := $(BAIDU_DIR)/baidu.zip
@@ -128,6 +131,9 @@ VENDOR_OTA            := $(VENDOR_DIR)/OTA
 VENDOR_SYSTEM         := $(VENDOR_DIR)/system
 VENDOR_FRAMEWORK      := $(VENDOR_SYSTEM)/framework
 VENDOR_FRAMEWORK_RES  := $(VENDOR_SYSTEM)/framework/framework-res.apk
+
+######################### history #########################
+HISTORY_DIR := history_package
 
 ######################### out #############################
 OUT_DIR := out
@@ -347,6 +353,8 @@ PORT_CUSTOM_JAR          := $(PORT_BUILD_TOOLS)/custom_jar.sh
 PORT_CUSTOM_BAIDU_ZIP    := $(PORT_BUILD_TOOLS)/custom_baidu_zip.sh
 PORT_CUSTOM_TARGET_FILES := $(PORT_BUILD_TOOLS)/custom_target_files.sh
 PORT_PREPARE_CUSTOM_JAR  := $(PORT_BUILD_TOOLS)/prepare_custom_jar.sh
+
+FLASH_OTA_TO_DEVICE      := $(PORT_BUILD_TOOLS)/flash_ota_to_device.sh
 
 TESTKEY_PEM := $(PORT_BUILD)/security/testkey.x509.pem
 TESTKEY_PK  := $(PORT_BUILD)/security/testkey.pk8

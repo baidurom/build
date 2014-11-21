@@ -36,7 +36,7 @@ PROPERTY_OVERRIDES := \
 PROPERTY_OVERRIDES := \
      $(call uniq-pairs-by-first-component,$(PROPERTY_OVERRIDES),=)
 
-$(OUT_OBJ_SYSTEM)/baidu.build.prop: $(BAIDU_SYSTEM)/build.prop
+$(OUT_OBJ_SYSTEM)/baidu.build.prop: $(BAIDU_SYSTEM)/build.prop $(PRJ_MAKEFILE)
 	$(hide) mkdir -p $(OUT_OBJ_SYSTEM)
 	$(hide) $(foreach line,$(PROPERTY_OVERRIDES), \
 			echo ">>> overries property: `echo $(line) | sed 's/$(sub_space)/ /g'`"; \
@@ -46,7 +46,7 @@ $(OUT_OBJ_SYSTEM)/baidu.build.prop: $(BAIDU_SYSTEM)/build.prop
 			echo "$(line)=delete" >> $@;)
 
 .PHONY: build_prop
-TARGET_FILES_SYSTEM += build_prop
+TARGET_FILES_SYSTEM += $(OUT_SYSTEM)/build.prop
 
 ifeq ($(strip $(ROM_VERSION_TYPE)),)
 ROM_VERSION_TYPE := $(shell $(call getprop,ro.version.type,$(BAIDU_SYSTEM)/build.prop))
@@ -70,8 +70,7 @@ endif #ifeq ($(strip $(ROM_OFFICIAL_VERSION)),)
 
 build_prop $(OUT_SYSTEM)/build.prop: $(OUT_OBJ_SYSTEM)/baidu.build.prop
 build_prop $(OUT_SYSTEM)/build.prop: $(VENDOR_BUILD_PROP)
-	$(hide) echo ">>> make build.prop"
-	$(hide) echo ">>> make with version number: $(VERSION_NUMBER)"
+	$(hide) echo ">>> make build.prop, with version number: $(VERSION_NUMBER)"
 	$(hide) mkdir -p $(OUT_SYSTEM)
 	$(hide)	$(MAKE_BUILD_PROP) \
 			-b $(OUT_OBJ_SYSTEM)/baidu.build.prop \
@@ -79,9 +78,8 @@ build_prop $(OUT_SYSTEM)/build.prop: $(VENDOR_BUILD_PROP)
 			$(if $(VERSION_NUMBER),-v $(VERSION_NUMBER),) \
 			-o $(OUT_SYSTEM)/build.prop
 	$(hide) if [ -x $(PRJ_CUSTOM_BUILDPROP) ];then \
-			$(PRJ_CUSTOM_BUILDPROP) $(OUT_SYSTEM)/build.prop; \
-		fi;
-	$(hide) echo ">>> make build.prop done";
+				$(PRJ_CUSTOM_BUILDPROP) $(OUT_SYSTEM)/build.prop; \
+			fi;
 	$(hide) echo ">>> Out ==> $(OUT_SYSTEM)/build.prop";
 
 .PHONY: clean-build_prop

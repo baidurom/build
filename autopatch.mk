@@ -6,8 +6,8 @@
 
 
 
-AUTOPATCH_DIR   := ${PORT_TOOLS}/autopatch
-AUTOPATCH_TOOL  := ${AUTOPATCH_DIR}/autopatch.py
+AUTOPATCH_DIR   := $(PORT_TOOLS)/autopatch
+AUTOPATCH_TOOL  := $(AUTOPATCH_DIR)/autopatch.py
 
 
 #hide :=
@@ -17,12 +17,12 @@ AUTOPATCH_TOOL  := ${AUTOPATCH_DIR}/autopatch.py
 patchall:
 	@echo ""
 	@echo ">>> auto patch all ..."
-	$(hide) $(AUTOPATCH_TOOL) --patchall ${BASE}
+	$(hide) $(AUTOPATCH_TOOL) --patchall --base=$(BASE)
 
 upgrade:
 	@echo ""
 	@echo ">>> upgrade ..."
-	$(hide) $(AUTOPATCH_TOOL) --upgrade ${BASE}
+	$(hide) $(AUTOPATCH_TOOL) --upgrade --base=$(BASE) --commit1=$(LAST_COMMIT)
 
 
 PORTING_USAGE="\n  Usage: porting BASE=XX [COMMIT1=XX] [COMMIT2=XX]                     " \
@@ -47,5 +47,5 @@ PORTING_USAGE="\n  Usage: porting BASE=XX [COMMIT1=XX] [COMMIT2=XX]             
 porting:
 	$(hide) if [ -z $(BASE) ]; then echo $(PORTING_USAGE); exit 1; fi
 	@echo ">>> Porting ..."
-	$(hide) $(AUTOPATCH_TOOL) --porting ${BASE} ${COMMIT1} ${COMMIT2}
+	$(hide) $(AUTOPATCH_TOOL) --porting --base=$(BASE) --commit1=$(COMMIT1) --commit2=$(COMMIT2)
 

@@ -1,7 +1,7 @@
 # main.mk
 
 #$(info # ------------------------------------------------------------------)
-##################  custom #########################
+####################  custom #########################
 ifneq ($(wildcard $(PORT_BUILD)/custom/defines.mk),)
 include $(PORT_BUILD)/custom/defines.mk
 endif
@@ -17,9 +17,9 @@ $(foreach mk, \
 	$(strip $(wildcard $(PORT_ROOT/baidu/$(BAIDU_BASE_DEVICE)/rom))), \
 	$(eval include $(mk)))
 
+######################  ota ##########################
 .PHONY: target-files framework-res bootimage recoveryimage
-
-.PHONY: otapackage ota fullota newota
+.PHONY: otapackage ota fullota
 
 ifeq ($(strip $(wildcard $(BAIDU_SYSTEM))),)
 #$(info # no source directory, need $(PREPARE_SOURCE))
@@ -27,9 +27,8 @@ ota fullota otapackage: check-project $(PREPARE_SOURCE)
 else
 ota fullota otapackage: check-project
 endif
-newota: check-project prepare-new-source
 
-ota fullota otapackage newota:
+ota fullota otapackage:
 	$(hide) cd $(PRJ_ROOT) && $(MAKE) ota-files-zip
 	@echo "=========================================================================="
 	@echo "Recommend Commands:                                                       "
@@ -38,6 +37,12 @@ ota fullota otapackage newota:
 	@echo "   make otadiff PRE=xx/xx/target_files_xx.zip => specify previous package."
 	@echo "   make otadiff PRE=xx/xx/ota_xx.zip => specify previous ota package.     "
 	@echo "=========================================================================="
+
+.PHONY: ota.phone
+ota.phone: ota_path := $(shell if [ -f $(PRJ_SAVED_OTA_NAME) ];then cat $(PRJ_SAVED_OTA_NAME); fi)
+ota.phone:
+	@echo ">>> Install ota package to device ..."
+	$(hide) $(FLASH_OTA_TO_DEVICE) $(ota_path)
 
 ifeq ($(strip $(WITH_DEXPREOPT)),true)
 NEED_SIGNED_TARGET_ZIP := $(PRJ_TARGET_FILE_ODEX)
@@ -51,30 +56,33 @@ else
 OUT_TARGET_ZIP := $(NEED_SIGNED_TARGET_ZIP)
 endif
 
-ifneq ($(wildcard $(PORT_BUILD)/custom/version.mk),)
-include $(PORT_BUILD)/custom/version.mk
-endif
-
 ################# check-project ######################
 .PHONY: check-project
 check-project:
-	$(hide) echo ">>> begining check project"
 	$(hide) if [ ! -f $(PRJ_ROOT)/Makefile ] && [ ! -f $(PRJ_ROOT)/makefile ];then \
 				echo ">>> ERROR: invalid project path, PRJ_ROOT: $(PRJ_ROOT)"; \
-				echo ">>> $(PRJ_ROOT)/makefile doesn't exist!!"; \
+				echo ">>> $(PRJ_ROOT)/Makefile doesn't exist!!"; \
 				exit 1; \
 			fi
-	$(hide) echo ">>> project path: $(PRJ_ROOT)"
-	$(hide) echo ">>> project: $(PRJ_NAME)"
-	$(hide) echo ">>> check-project done, SUCCESS\n"
+	$(hide) echo ">>> project: $(PRJ_NAME), path: $(PRJ_ROOT)"
 
 ####################### clean #########################
 CLEAN_TARGETS += clean-out 
 
 .PHONY: clean-out
 clean-out:
-	$(hide) echo ">>> remove $(OUT_DIR)"
-	$(hide) rm -rf $(OUT_DIR)
+	$(hide) if [ -d $(OUT_DIR) ];then \
+				filelist=$$(ls $(OUT_DIR)/*.zip 2> /dev/null | egrep "$(OUT_DIR)/ota-.*\.zip|$(OUT_DIR)/target-files-.*\.zip" | tr "\n" " "); \
+				if [ x"$$filelist" != x"" ];then \
+					filename=`echo $$filelist | sed 's#$(OUT_DIR)/##g'`; \
+					echo ">>> Backup files to $(HISTORY_DIR)/:"; \
+					echo "    $$filename"; \
+					mkdir -p $(HISTORY_DIR); \
+					mv $$filelist $(HISTORY_DIR) > /dev/null; \
+				fi; \
+				echo ">>> remove $(OUT_DIR)"; \
+				rm -rf $(OUT_DIR); \
+			fi
 
 CLEAN_TARGETS += clean-source
 
@@ -95,13 +103,8 @@ clean-autopatch:
 	$(hide) rm -rf $(PRJ_ROOT)/autopatch;
 
 ################### boot recovery ######################
-ifeq ($(PRJ_ROOT)/boot_recovery.mk,$(wildcard $(PRJ_ROOT)/boot_recovery.mk))
-#    $(info # use project boot_recovery.mk)
-    include $(PRJ_ROOT)/boot_recovery.mk
-else
-#    $(info # use build/boot_recovery.mk)
-    include $(PORT_BUILD)/boot_recovery.mk
-endif
+include $(PORT_BUILD)/boot_recovery.mk
+
 TARGET_FILES_SYSTEM += bootimage recoveryimage
 
 ################### newproject #########################
@@ -571,13 +574,14 @@ else
 $(OUT_OBJ_META)/apkcerts.txt:
 	$(hide) mkdir -p $(OUT_OBJ_META)
 	$(hide) cat /dev/null > $@
-	$(hide) $(foreach app,$(BAIDU_PRESIGNED_APPS),\
-			echo "name=\"`basename $(app)`\" certificate=\"PRESIGNED\" private_key=\"\"" >> $@;)
+	$(hide) if [ -f $(BAIDU_META)/apkcerts.txt ];then \
+				cat $(BAIDU_META)/apkcerts.txt | grep "PRESIGNED" >> $@; \
+			fi
 
 $(OUT_META)/apkcerts.txt: target-files-system $(OUT_OBJ_META)/apkcerts.txt
 	$(hide) echo ">>> use testkey to sign all of the apks, except presigned apk, CERTS_PATH:$(CERTS_PATH)"
 	$(hide) mkdir -p $(OUT_OBJ_META)
-	$(hide) find $(OUT_SYSTEM) -name "*.apk" | awk -F '\/' '{print $$NF}' > $(OUT_OBJ_META)/apkcerts.txt;
+	$(hide) find $(OUT_SYSTEM) -name "*.apk" | awk -F '/' '{print $$NF}' > $(OUT_OBJ_META)/apkcerts.txt;
 	$(hide) sed -i 's#^#name="#g' $(OUT_OBJ_META)/apkcerts.txt;
 	$(hide) sed -i 's#$$#" certificate="$(CERTS_PATH)/testkey.x509.pem" private_key="$(CERTS_PATH)/testkey.pk8"#g' \
 			$(OUT_OBJ_META)/apkcerts.txt;
@@ -680,11 +684,7 @@ ifneq ($(strip $(SIGN_OTA)),true)
 SIGN_OTA_PARAM := --no_sign
 endif
 
-ifneq ($(ROMER),)
-PRJ_FULL_OTA_ZIP := $(OUT_DIR)/ota-$(VERSION_NUMBER)-$(ROMER).zip
-else
 PRJ_FULL_OTA_ZIP := $(OUT_DIR)/ota-$(VERSION_NUMBER).zip
-endif
 
 $(PRJ_FULL_OTA_ZIP): $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
 	$(hide) echo $(PRJ_FULL_OTA_ZIP) > $(PRJ_SAVED_OTA_NAME)
@@ -699,7 +699,17 @@ $(PRJ_FULL_OTA_ZIP): $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
 			$(PRJ_FULL_OTA_ZIP) || exit 51
 
 ota-files-zip: $(PRJ_FULL_OTA_ZIP) mkuserimg
-	$(hide) echo ">>> OUT ==> $(PRJ_FULL_OTA_ZIP)";
+ota-files-zip: DATE := $(shell date +%Y%m%d%H%M)
+ota-files-zip:
+	$(hide) if [ x"$(USER)" != x"baidu" ];then \
+				mv $(OUT_TARGET_ZIP) $(OUT_DIR)/target-files-$(VERSION_NUMBER).zip; \
+				echo ">>> OUT ==> $(OUT_DIR)/target-files-$(VERSION_NUMBER).zip"; \
+				mv $(PRJ_FULL_OTA_ZIP) $(OUT_DIR)/ota-$(VERSION_NUMBER)-$(ROMER)-$(DATE).zip; \
+				echo ">>> OUT ==> $(OUT_DIR)/ota-$(VERSION_NUMBER)-$(ROMER)-$(DATE).zip"; \
+				echo "$(OUT_DIR)/ota-$(VERSION_NUMBER)-$(ROMER)-$(DATE).zip" > $(PRJ_SAVED_OTA_NAME); \
+			else \
+				echo ">>> OUT ==> $(PRJ_FULL_OTA_ZIP)"; \
+			fi;
 
 .PHONY: mkuserimg
 

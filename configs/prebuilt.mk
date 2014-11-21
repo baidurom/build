@@ -1,10 +1,9 @@
 # This file is auto generate by tools/config/config_prebuilt.py
-# version: from 573038(Galaxy Nexus) ==> I9250_D_2.3.61.23(i9250-GN)
-# Date: 2014/11/09 02:38
+# version: from 573038(Galaxy Nexus) ==> I9250_D_2.3.61.43(i9250-GN)
+# Date: 2014/11/15 02:38
 
 BAIDU_PREBUILT_DIRS += \
     etc/defaultTheme \
-    etc/female \
     etc/modules \
     etc/water \
     tts \
@@ -31,6 +30,7 @@ BAIDU_PREBUILT += \
     app/BaiduProxy.apk \
     app/BaiduSecurityCenter.apk \
     app/BaiduSemiView.apk \
+    app/BaiduSenarioService.apk \
     app/BaiduServiceFramework.apk \
     app/BaiduSocialShare.apk \
     app/BaiduSoundRecorder.apk \
@@ -48,7 +48,6 @@ BAIDU_PREBUILT += \
     app/Exchange2.apk \
     app/FindmeDM.apk \
     app/GameCenter.apk \
-    app/HelpBook.apk \
     app/HomePro.apk \
     app/NewPhoneWizard.apk \
     app/NotificationProvider.apk \
@@ -60,7 +59,6 @@ BAIDU_PREBUILT += \
     app/TrafficMonitor.apk \
     app/Wallpaper.apk \
     app/YellowPageProvider.apk \
-    app/Yellowpages.apk \
     app/YiYueDu.apk \
     app/cm-sdk-release.apk \
     app/iReader.apk \
@@ -93,10 +91,8 @@ BAIDU_PREBUILT += \
     etc/defaultTheme.btp \
     etc/dict.model.utf \
     etc/dp.db \
-    etc/female.btp \
     etc/http2wormhole.conf \
     etc/name.model.utf \
-    etc/onlinephonebook.db \
     etc/permissions/framework-yi.xml \
     etc/portable_camera.xml \
     etc/raw_yellow_data.db \

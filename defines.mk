@@ -196,7 +196,6 @@ $(OUT_OBJ_APP)/$($(2)_apkBaseName).signed.apk: $(OUT_OBJ_META)/apkcerts.txt
 $(OUT_OBJ_APP)/$($(2)_apkBaseName).signed.apk: $(OUT_OBJ_RES)/$($(2)_apkBaseName).remove
 	$(hide) mkdir -p $(OUT_OBJ_APP)
 	$(hide) if [ "x`grep "\\"$$(apkName)\\"" $(OUT_OBJ_META)/apkcerts.txt | grep "\\"PRESIGNED\\""`" = "x" ]; then \
-				echo ">>> sign testkey $(1) to $$@"; \
 				cd $$< > /dev/null; \
 				zip $$(apkName) * -r -q -0; \
 				cd - > /dev/null; \
@@ -204,11 +203,11 @@ $(OUT_OBJ_APP)/$($(2)_apkBaseName).signed.apk: $(OUT_OBJ_RES)/$($(2)_apkBaseName
 				java -jar $(SIGN_JAR) $(TESTKEY_PEM) $(TESTKEY_PK) $$</$$(apkName) $$@; \
 				rm $$</$($(2)_apkBaseName).apk; \
 				touch $$@; \
+				echo ">>> Sign testkey, out => $$@"; \
 			else \
-				echo ">>> presigned $(1) to $$@"; \
 				cp '$(1)' $$@; \
+				echo ">>> Presigned, out => $$@"; \
 			fi
-	$(hide) echo ">>> Signed out ==> $$@"
 
 clean-$($(2)_apkBaseName): remove_targets += $(OUT_OBJ_RES)/$($(2)_apkBaseName).remove
 
@@ -221,7 +220,7 @@ $(2): $(OUT_OBJ_APP)/$(strip $($(2)_apkBaseName)).signed.apk
 	$(hide) mkdir -p `dirname '$(2)'`
 	$(hide) rm -rf '$(2)'
 	$(hide) $(ZIPALIGN) 4 '$$<' '$(2)'
-	$(hide) echo ">>> zipalign for '$(2)'"
+	$(hide) echo ">>> Zipalign, out => '$(2)'"
 
 # add clean for this target
 $(call clean-app,$(1),$(2))
@@ -240,7 +239,6 @@ $(2): jarBaseName := $(notdir $(1))
 $(2): tempJarDir  := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/$(call getBaseName,$(2)).process.XXX)
 
 $(2): $(1) $(VENDOR_METAINF)
-	$(hide) echo ">>> sign $(1) to $(2)";
 	$(hide) if [ ! -d `dirname $(2)` ]; then mkdir -p `dirname $(2)`; fi;	
 	$(hide) rm -rf $$(tempJarDir);
 	$(hide) mkdir -p $$(tempJarDir);
@@ -254,7 +252,7 @@ $(2): $(1) $(VENDOR_METAINF)
 	$(hide) cd $$(tempJarDir) && jar cf $$(jarBaseName) -C Jar/ . > /dev/null; 
 	$(hide) mv $$(tempJarDir)/$$(jarBaseName) $(2);
 	$(hide) rm -rf $$(tempJarDir);
-	$(hide) echo ">>> Signed out ==> $(2)";
+	$(hide) echo ">>> Signed, out ==> $(2)";
 
 # add clean for this target
 $(call clean-jar,$(1),$(2))
@@ -431,12 +429,13 @@ endef
 # used to build the apks in framework, and doesn't have smali directory
 define framework_apk_build
 SIGN_APPS += $(OUT_OBJ_SYSTEM)/$(2):$(OUT_SYSTEM)/$(2)
-$(call getBaseName, $(2))_fk_sources := $(sort $(call get_all_smali_files_in_dir, $(1)))
+$(eval fk_sources := $(sort $(call get_all_smali_files_in_dir, $(1))))
+$(eval fk_ol_sources := $(sort $(call get_all_smali_files_in_dir, $(PRJ_OVERLAY)/$(call getBaseName, $(2))/res)))
 
 $(OUT_OBJ_SYSTEM)/$(2): apkBaseName  := $(call getBaseName, $(2))
 $(OUT_OBJ_SYSTEM)/$(2): tempSmaliDir := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/$(call getBaseName, $(2)).XXX)
 
-$(OUT_OBJ_SYSTEM)/$(2): $(IF_VENDOR_RES) $$($(call getBaseName, $(2))_fk_sources)
+$(OUT_OBJ_SYSTEM)/$(2): $(IF_VENDOR_RES) $(fk_sources) $(fk_ol_sources)
 	$(hide) echo ">>> build framework apk $(1) to $$@"
 	$(hide) rm -rf $$(tempSmaliDir)
 	$(hide) mkdir -p $(OUT_OBJ_FRAMEWORK)
@@ -448,12 +447,16 @@ $(OUT_OBJ_SYSTEM)/$(2): $(IF_VENDOR_RES) $$($(call getBaseName, $(2))_fk_sources
         $(eval resId := $(call get_resource_id,$(1)))
         $(eval resId := $(shell expr $(resId) - 1))
 	$(hide) $(AAPT) package -u -x -z -M $$(tempSmaliDir)/AndroidManifest.xml \
+			$(if $(fk_ol_sources), -S $(PRJ_OVERLAY)/$(call getBaseName, $(2))/res,) \
 			-S $$(tempSmaliDir)/res \
 			$(call get_include_aapt_res,$(resId)) \
 			-F $$@
         $(eval resId := )
 	$(hide) rm -rf $$(tempSmaliDir);
 	$(hide) echo ">>> build framework apk $(1) done";
+
+$(eval fk_sources :=)
+$(eval fk_ol_sources :=)
 endef
 
 # used to build baidu_modify_jars
