@@ -294,6 +294,7 @@ PRJ_OUT_SERVER              := $(OUT_DIR)/server
 PRJ_OUT_SERVER_IMAGES       := $(PRJ_OUT_SERVER)/image
 PRJ_OUT_SERVER_OTA          := $(PRJ_OUT_SERVER)/ota
 PRJ_SAVED_OTA_NAME          := $(OUT_DIR)/.ota_name
+PRJ_SAVED_TARGET_NAME       := $(OUT_DIR)/.target_name
 
 ########################## init ###########################
 FRAMEWORK_RES_SOURCE := 

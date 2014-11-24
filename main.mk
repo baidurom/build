@@ -577,22 +577,16 @@ $(OUT_OBJ_META)/apkcerts.txt:
 	$(hide) if [ -f $(BAIDU_META)/apkcerts.txt ];then \
 				cat $(BAIDU_META)/apkcerts.txt | grep "PRESIGNED" >> $@; \
 			fi
-
-$(OUT_META)/apkcerts.txt: target-files-system $(OUT_OBJ_META)/apkcerts.txt
-	$(hide) echo ">>> use testkey to sign all of the apks, except presigned apk, CERTS_PATH:$(CERTS_PATH)"
-	$(hide) mkdir -p $(OUT_OBJ_META)
-	$(hide) find $(OUT_SYSTEM) -name "*.apk" | awk -F '/' '{print $$NF}' > $(OUT_OBJ_META)/apkcerts.txt;
-	$(hide) sed -i 's#^#name="#g' $(OUT_OBJ_META)/apkcerts.txt;
-	$(hide) sed -i 's#$$#" certificate="$(CERTS_PATH)/testkey.x509.pem" private_key="$(CERTS_PATH)/testkey.pk8"#g' \
-			$(OUT_OBJ_META)/apkcerts.txt;
 	$(hide) for apk in $(BAIDU_PRESIGNED_APPS); do \
 				apkbasename=`echo $$apk | awk 'BEGIN{FS="[\/\.]"}{print $$(NF-1)}'`; \
-				sed -i "/\"$$apkbasename\"/d" $(OUT_OBJ_META)/apkcerts.txt; \
-				echo "name=\"$$apk\" certificate=\"PRESIGNED\" private_key=\"\"" >> $(OUT_OBJ_META)/apkcerts.txt; \
+				sed -i "/\"$$apkbasename\"/d" $@; \
+				echo "name=\"$$apk\" certificate=\"PRESIGNED\" private_key=\"\"" >> $@; \
 			done;
+
+$(OUT_META)/apkcerts.txt: $(OUT_OBJ_META)/apkcerts.txt
 	$(hide) mkdir -p $(OUT_META)
-	$(hide) mv $(OUT_OBJ_META)/apkcerts.txt $(OUT_META)/apkcerts.txt;
-	$(hide) echo ">>> Update Out ==> $(OUT_META)/apkcerts.txt";
+	$(hide) cp $< $@;
+	$(hide) echo ">>> Update Out ==> $@";
 endif
 
 ##################### channel #########################
@@ -688,6 +682,7 @@ PRJ_FULL_OTA_ZIP := $(OUT_DIR)/ota-$(VERSION_NUMBER).zip
 
 $(PRJ_FULL_OTA_ZIP): $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
 	$(hide) echo $(PRJ_FULL_OTA_ZIP) > $(PRJ_SAVED_OTA_NAME)
+	$(hide) echo $(OUT_TARGET_ZIP) > $(PRJ_SAVED_TARGET_NAME)
 	$(hide) $(OTA_FROM_TARGET_FILES) \
 			$(if $(wildcard $(PRJ_UPDATER_SCRIPT_PART)),$(addprefix -e , $(PRJ_UPDATER_SCRIPT_PART)),) \
 			$(FORMAT_PARAM) \
@@ -704,6 +699,7 @@ ota-files-zip:
 	$(hide) if [ x"$(USER)" != x"baidu" ];then \
 				mv $(OUT_TARGET_ZIP) $(OUT_DIR)/target-files-$(VERSION_NUMBER).zip; \
 				echo ">>> OUT ==> $(OUT_DIR)/target-files-$(VERSION_NUMBER).zip"; \
+				echo "$(OUT_DIR)/target-files-$(VERSION_NUMBER).zip" > $(PRJ_SAVED_TARGET_NAME); \
 				mv $(PRJ_FULL_OTA_ZIP) $(OUT_DIR)/ota-$(VERSION_NUMBER)-$(ROMER)-$(DATE).zip; \
 				echo ">>> OUT ==> $(OUT_DIR)/ota-$(VERSION_NUMBER)-$(ROMER)-$(DATE).zip"; \
 				echo "$(OUT_DIR)/ota-$(VERSION_NUMBER)-$(ROMER)-$(DATE).zip" > $(PRJ_SAVED_OTA_NAME); \
