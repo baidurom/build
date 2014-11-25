@@ -903,6 +903,7 @@ def main(argv):
                                               "aslr_mode=",
                                               "cust_boot=",
                                               "formatNum=",
+                                              "prebuilt=",
                                               "no_sign=",
                                               ],
                              extra_option_handler=option_handler)
