@@ -17,6 +17,7 @@ import re
 
 import common
 import string
+import commands
 
 OPTIONS = common.OPTIONS
 
@@ -317,4 +318,23 @@ class EdifyGenerator(object):
         self.script.append(OPTIONS.extra_script)
     except KeyError as e:
       print "use default script...."
+    if OPTIONS.custom_script is not None:
+      self.CustomScript(OPTIONS.custom_script)
     self.AddToZip(input_zip, output_zip, input_path)
+
+  def CustomScript(self, custom_shell):
+    print "custom updater-script ..."
+    tmp_script_path = "/tmp/tmp-script"
+    tmp_script = file(tmp_script_path, 'w')
+    tmp_script.seek(0)
+    tmp_script.write("\n".join(self.script) + "\n")
+    tmp_script.close()
+    cmd = "%s %s" %(custom_shell, tmp_script_path)
+    (status, output) = commands.getstatusoutput(cmd)
+    print output
+    if status:
+        print ("WARNING: "+custom_shell+" run failed!")
+    tmp_script = file(tmp_script_path, 'r')
+    self.script = string.split(tmp_script.read(), '\n')
+    tmp_script.close()
+    os.remove(tmp_script_path)

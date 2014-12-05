@@ -112,10 +112,21 @@ $(VENDOR_TARGET_ZIP): $(VENDOR_RECOVERY_FSTAB)
 	$(hide) echo ">>> build vendor target files ..."
 	$(hide) if [ ! -d $(OUT_DIR) ]; then mkdir -p $(OUT_DIR); fi
 	$(hide) cd $(VENDOR_DIR); zip -qry $(PRJ_ROOT)/$(VENDOR_TARGET_ZIP).tmp *; cd - > /dev/null
+	$(hide) rm -rf $(VENDOR_TARGET_DIR)
 	$(hide) unzip -q $(VENDOR_TARGET_ZIP).tmp -d $(VENDOR_TARGET_DIR)
 	$(hide) rm -rf $(VENDOR_TARGET_ZIP).tmp
 	$(hide) mv $(VENDOR_TARGET_DIR)/system $(VENDOR_TARGET_DIR)/SYSTEM
 	$(hide) rm -rf $(VENDOR_TARGET_DIR)/BOOTABLE_IMAGES/ $(VENDOR_TARGET_DIR)/BOOT
+	$(hide) len=$$(grep -v "^#" $(VENDOR_RECOVERY_FSTAB) | egrep "ext|emmc|vfat|yaffs" | awk '{print NF}' | head -1); \
+			isNew=$$(grep -v "^#" $(VENDOR_RECOVERY_FSTAB) | egrep "ext|emmc|vfat|yaffs" | awk '{if ($$2 == "/system"){print "NEW"}}'); \
+			if [ "x$$len" = "x5" ] && [ "x$$isNew" = "xNEW" ]; \
+			then \
+				sed -i '/^fstab_version[ \t]*=.*/d' $(VENDOR_TARGET_DIR)/META/misc_info.txt; \
+				echo "fstab_version=2" >> $(VENDOR_TARGET_DIR)/META/misc_info.txt; \
+			else \
+				sed -i '/^fstab_version[ \t]*=.*/d' $(VENDOR_TARGET_DIR)/META/misc_info.txt; \
+				echo "fstab_version=1" >> $(VENDOR_TARGET_DIR)/META/misc_info.txt; \
+			fi;
 	$(hide) if [ x"false" = x"$(strip $(RECOVERY_OTA_ASSERT))" ]; then \
 				echo "recovery_ota_assert=false" >> $(VENDOR_TARGET_DIR)/META/misc_info.txt; \
 			fi

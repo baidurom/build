@@ -1,6 +1,6 @@
 # This file is auto generate by tools/config/config_prebuilt.py
-# version: from 573038(Galaxy Nexus) ==> I9250_D_2.3.61.43(i9250-GN)
-# Date: 2014/11/15 02:38
+# version: from 573038(Galaxy Nexus) ==> I9250_D_2.3.62.44(i9250-GN)
+# Date: 2014/12/01 23:08
 
 BAIDU_PREBUILT_DIRS += \
     etc/defaultTheme \
@@ -25,7 +25,7 @@ BAIDU_PREBUILT += \
     app/BaiduLightApp.apk \
     app/BaiduMap.apk \
     app/BaiduMusicPlayer.apk \
-    app/BaiduNetworkLocation.apk \
+    app/BaiduNetworkLocationLegacy.apk \
     app/BaiduNotepad.apk \
     app/BaiduProxy.apk \
     app/BaiduSecurityCenter.apk \
@@ -125,6 +125,7 @@ BAIDU_PREBUILT += \
     lib/libejTTS-yi.so \
     lib/libencrypt.so \
     lib/libffmpeg_baidu.so \
+    lib/libgdx.so \
     lib/libjni_eglfenceForGallery.so \
     lib/libjni_filtershow_filtersForGallery.so \
     lib/libjni_mosaic_new.so \
@@ -445,6 +446,7 @@ BAIDU_PRESIGNED_APPS += \
     BaiduInput.apk \
     BaiduMap.apk \
     BaiduNetworkLocation.apk \
+    BaiduNetworkLocationLegacy.apk \
     Calendar.apk \
     GameCenter.apk \
     SearchBox.apk \

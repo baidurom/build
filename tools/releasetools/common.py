@@ -300,7 +300,7 @@ def GetBootableImage(name, prebuilt_name, unpack_dir, tree_subdir):
 
   prebuilt_path = os.path.join(unpack_dir, "BOOTABLE_IMAGES", prebuilt_name)
   if os.path.exists(prebuilt_path):
-    print "using prebuilt %s..." % (prebuilt_name,)
+    print "using image %s..." % (prebuilt_name,)
     return File.FromLocalFile(name, prebuilt_path)
 #  else:
 #    print "building image from target_files %s..." % (tree_subdir,)
@@ -858,7 +858,8 @@ def ComputeDifferences(diffs):
 
 # map recovery.fstab's fs_types to mount/format "partition types"
 PARTITION_TYPES = { "yaffs2": "MTD", "mtd": "MTD", "ext3": "EMMC",
-                    "ext4": "EMMC", "emmc": "EMMC", "vfat": "EMMC"}
+                    "ext4": "EMMC", "emmc": "EMMC", "vfat": "EMMC",
+                    "f2fs": "EMMC"}
 
 def GetTypeAndDevice(mount_point, info):
   fstab = info["fstab"]

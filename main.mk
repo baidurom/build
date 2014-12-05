@@ -622,6 +622,13 @@ else
 PREBUILT_PARAM := --prebuilt $(PRJ_PREBUILT_OVERLAY)
 endif
 
+################ custom updater-script ##################
+ifeq ($(strip $(wildcard $(PRJ_CUSTOM_SCRIPT))),)
+CUSTOM_SCRIPT_PARAM :=
+else
+CUSTOM_SCRIPT_PARAM := --custom_script $(PRJ_CUSTOM_SCRIPT)
+endif
+
 ################### baidu_service #######################
 ifneq ($(strip $(USER)),baidu)
 TARGET_FILES_SYSTEM += $(OUT_SYSTEM_BIN)/baidu_service
@@ -690,6 +697,7 @@ $(PRJ_FULL_OTA_ZIP): $(OUT_TARGET_ZIP) $(OUT_LOGO_BIN)
 			-n -k $(OTA_CERT) \
 			$(LOGO_BIN_PARAM) \
 			$(PREBUILT_PARAM) \
+			$(CUSTOM_SCRIPT_PARAM) \
 			$(OUT_TARGET_ZIP) \
 			$(PRJ_FULL_OTA_ZIP) || exit 51
 

@@ -92,6 +92,7 @@ OPTIONS.logo = None
 OPTIONS.formatNum = "5"
 OPTIONS.sign_ota = True
 OPTIONS.prebuilt = None
+OPTIONS.custom_script = None
 
 def MostPopularKey(d, default):
   """Given a dict, return the key corresponding to the largest
@@ -884,6 +885,8 @@ def main(argv):
       OPTIONS.formatNum = a
     elif o in ("--prebuilt"):
       OPTIONS.prebuilt = a
+    elif o in ("--custom_script"):
+      OPTIONS.custom_script = a
     elif o in ("--no_sign"):
       OPTIONS.sign_ota = False
     else:
@@ -904,6 +907,7 @@ def main(argv):
                                               "cust_boot=",
                                               "formatNum=",
                                               "prebuilt=",
+                                              "custom_script=",
                                               "no_sign=",
                                               ],
                              extra_option_handler=option_handler)
