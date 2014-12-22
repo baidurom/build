@@ -446,6 +446,8 @@ def WriteFullOTAPackage(input_zip, output_zip):
   AppendAssertions(script, input_zip)
   device_specific.FullOTA_Assertions()
 
+  script.Print("Start to install update package!")
+  PrintRomerInfo(script, input_zip)
   script.ShowProgress(0.5, 0)
 
   if OPTIONS.wipe_user_data:
@@ -527,6 +529,7 @@ def WriteFullOTAPackage(input_zip, output_zip):
   script.SetPermissionsRecursive("/data/app", 1000, 1000, 0755, 0644)
 
   script.UnmountAll()
+  script.Print("Baidu Cloud OS install Complete!")
   script.AddToZipHook(input_zip, output_zip)
   WriteMetadata(metadata, output_zip)
 
@@ -572,6 +575,26 @@ def GetBuildProp(property, z):
     raise common.ExternalError("couldn't find %s in build.prop" % (property,))
   return m.group(1).strip()
 
+def PrintRomerInfo(script, input_zip):
+  model, romer, romerinfo=GetRomerInfo(input_zip)
+  if romer:
+    script.Print("********************************")
+    script.Print("**  "+model+" Baidu Cloud OS")
+    script.Print("**  Author: "+romer)
+    script.Print("**  "+romerinfo)
+    script.Print("********************************")
+
+def GetRomerInfo(z):
+  """Return the romer info ."""
+  bp = z.read("SYSTEM/build.prop")
+  modelmatch = re.search(re.escape("ro.product.model") + r"=(.*)\n", bp)
+  romermatch = re.search(re.escape("ro.baidu.romer") + r"=(.*)\n", bp)
+  infomatch = re.search(re.escape("ro.baidu.romerinfo") + r"=(.*)\n", bp)
+  if not romermatch or not modelmatch:
+    return ((),(),())
+  if not infomatch:
+    return (modelmatch.group(1).strip(), romermatch.group(1).strip(), "http://bbs.os.baidu.com")
+  return (modelmatch.group(1).strip(), romermatch.group(1).strip(), infomatch.group(1).strip())
 
 def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
   source_version = OPTIONS.source_info_dict["recovery_api_version"]

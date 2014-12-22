@@ -630,9 +630,7 @@ CUSTOM_SCRIPT_PARAM := --custom_script $(PRJ_CUSTOM_SCRIPT)
 endif
 
 ################### baidu_service #######################
-ifneq ($(strip $(USER)),baidu)
-TARGET_FILES_SYSTEM += $(OUT_SYSTEM_BIN)/baidu_service
-else ifeq ($(strip $(filter boot boot.img, $(vendor_modify_images))),)
+ifeq ($(strip $(filter boot boot.img, $(vendor_modify_images))),)
 TARGET_FILES_SYSTEM += $(OUT_SYSTEM_BIN)/baidu_service
 endif
 
