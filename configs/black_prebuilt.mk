@@ -29,6 +29,7 @@ BLACK_LIST += \
 	app/BaiduFM.apk \
 	app/FMRadio.apk \
 	app/MtkBt.apk \
+	app/NfcNci.apk \
 	app/Nfc.apk
 
 BLACK_LIST += \
