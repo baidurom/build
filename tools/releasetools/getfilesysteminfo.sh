@@ -14,6 +14,6 @@ function traverse_dir {
 	done
 }
 
-rm ${FILE_INFO}
+rm ${FILE_INFO} 2> /dev/null
 traverse_dir "/system"
 chmod 666 ${FILE_INFO}

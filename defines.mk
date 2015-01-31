@@ -91,7 +91,7 @@ endef
 
 # get all smali files in the directory, only for find xx.jar.out, process "$" symbol
 define get_all_smali_files_in_dir
-$(strip $(filter-out $(1),$(shell if [ -d $(1) ]; then find $(1) -type f | sed 's/\$$/\\$$$$/g' | tee /tmp/find; fi)))
+$(strip $(filter-out $(1),$(shell if [ -d $(1) ]; then find $(1) -type f | sed 's/\$$/\$$$$/g' | tee /tmp/find; fi)))
 endef
 
 # update the apktool.yml, include tags and usesFramework
@@ -491,7 +491,6 @@ endef
 define vendor_modify_jar_build
 SIGN_JARS += $(OUT_OBJ_SYSTEM)/$(2):$(OUT_SYSTEM)/$(2)
 $(call getBaseName, $(2))_vm_jar_sources  := $(sort $(call get_all_smali_files_in_dir, $(1)))
-
 $(OUT_OBJ_SYSTEM)/$(2): jarBaseName   := $(call getBaseName, $(2))
 $(OUT_OBJ_SYSTEM)/$(2): baiduSmaliDir := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/$(call getBaseName, $(2)).baidu.XXX)
 $(OUT_OBJ_SYSTEM)/$(2): tempSmaliDir  := $(shell mktemp -u $(OUT_OBJ_FRAMEWORK)/$(call getBaseName, $(2)).XXX)
